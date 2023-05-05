@@ -3,16 +3,27 @@ Guessing Number Game
  Inspired by wordle/termo
 """
 import tkinter as tk
-from tkinter import ttk
 import numpy as np
-from numpy import random as rd
+import random
 
+class Number():
+    def __init__(self, value, found):
+        self.value = value
+        self.found = found
+
+
+def print_number(array):  # Only use this if you are a cheater
+    full_number = []
+    for number in array:
+        full_number = np.append(full_number, number.value)
+    print(f"Generated number: {full_number}")
 
 def generate_number():
     """Generates a array with 5 random numbers from 0 to 9"""
-    random_number = rd.randint(1, 10, 1)
-    random_number = np.append(random_number, rd.randint(0, 10, 4))
-    print(f"Generated Number: {random_number}")  # Only use this if you are a cheater
+    random_number = np.array(Number(random.randint(1, 9), 0))
+    for i in range(4):
+        random_number = np.append(random_number, Number(random.randint(0,9), 0))
+    print_number(random_number)  # Used for testing ONLY
     return random_number
 
 
@@ -22,7 +33,7 @@ class GuessingNumberGame(tk.Tk):
         tk.Tk.__init__(self)
 
         self.title("Guessing Number Game")
-        self.geometry("300x300")
+        self.geometry("400x400")
         self.eval("tk::PlaceWindow . center")
 
         game_frame = Game (self)
@@ -37,11 +48,9 @@ class Game(tk.Frame):
         header = tk.Label(self,
                           text = "Welcome to a Number Guessing Game!",
                           font = ("Arial", 12, "bold"))
-        header.grid(pady = 20,
-                    padx = 10,
-                    row = 0,
-                    column = 0, columnspan = 5,
-                    sticky="n")
+        header.pack(anchor = "n",
+                    pady = 20,
+                    padx = 10)
 
         random_number = generate_number()
         boxes = self._create_boxes(master)
@@ -49,19 +58,17 @@ class Game(tk.Frame):
         guess_button = tk.Button(self,
                                  text = "Guess",
                                  command = lambda: self._check_guess(boxes, random_number))
-        guess_button.grid(column = 2,
-                          sticky = "s")
+        guess_button.pack(anchor = "n")
 
     def _check_guess(self, boxes, random_number):
         """Checks the users guess"""
         guess = []
         for box in boxes[0]:
             guess.append(int(box.get()))
-            print(f"guess: {guess}")
-            print(f"num: {random_number}")
-        if np.all(random_number == guess):
-            print("you guessed it!")
-        
+        for i, number in enumerate(guess):
+            if number == random_number[i].value:
+                random_number[i].found = 1
+                break
         
     
     def _create_boxes(self, app_window):
@@ -74,19 +81,22 @@ class Game(tk.Frame):
         Boxes (Array): Array containing the boxes created
         """
         validation_command = app_window.register(self._validate_entry)
+        boxes_holder = tk.Label(self)
+        boxes_holder.pack(anchor = "n")
         boxes = [[] for _ in range(6)]
         for i in range(6):
             for j in range(5):
-                box = tk.Entry(self,
-                            font = ("Arial", 12),
-                            state = "disabled",
-                            validate = "key",
-                            validatecommand=(validation_command, '%P'))
+                box = tk.Entry(boxes_holder,
+                               font = ("Arial", 12),
+                               width = 5,
+                               state = "disabled",
+                               validate = "key",
+                               validatecommand=(validation_command, '%P'))
                 box.grid(padx = 5,
-                        pady = 10,
-                        row = i+1,
-                        column = j,
-                        sticky = "nsew")
+                         pady = 10,
+                         row = i+1,
+                         column = j,
+                         sticky = "ns")
                 boxes[i].append(box)
         for box in boxes[0]:
             box.configure(state = "normal")

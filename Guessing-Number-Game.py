@@ -50,40 +50,47 @@ class Game(tk.Frame):
         guess_button.pack(anchor = "n")
 
     def _check_guess(self, boxes, random_number):
-        """Checks the users guess"""     
-        if self.guess_row >= 5:
+        """Checks the users guess"""
+        guess_row = self.guess_row   
+        if guess_row > 5:
             print("you lost!")
             return
 
         target = np.copy(random_number)
         correct_number = 0
 
-        for i, box in enumerate(boxes[self.guess_row]):
+        for i, box in enumerate(boxes[guess_row]):
             if int(box.get()) == target[i]:
                 target[i] = -1
                 correct_number += 1
                 box.configure(bg = "Green")
+            else:
+                box.configure(bg = "Gray")
+                for j in target:
+                    if int(box.get()) == j and box["bg"] != "Green":
+                        box.configure(bg = "Yellow")
+                        break
 
         if correct_number == 5:
             print("You Guessed It!")
             return
         
-        for box in boxes[self.guess_row]:
-            for j in target:
-                if int(box.get()) == j:
-                    box.configure(bg = "Yellow")
-                    break
+        # for box in boxes[guess_row]:
+        #     for j in target:
+        #         if int(box.get()) == j:
+        #             box.configure(bg = "Yellow")
+        #             break
         
-        self.guess_row += 1
-        self._update_boxes(boxes, self.guess_row)
+        self._update_boxes(boxes)
 
-    def _update_boxes(self, boxes, row):
-        for box in boxes[row]:
-            box.configure(state = "normal")
-        for box in boxes[row-1]:
+    def _update_boxes(self, boxes):
+        for box in boxes[self.guess_row]:
             box.configure(disabledbackground = box["bg"],
                           disabledforeground = box["fg"],
                           state = "disable")
+        self.guess_row += 1
+        for box in boxes[self.guess_row]:
+            box.configure(state = "normal")
     
     def _create_boxes(self, app_window):
         """Creates the boxes for the user to guess the number

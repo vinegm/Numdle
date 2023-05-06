@@ -5,7 +5,7 @@ Guessing Number Game
 import tkinter as tk
 import numpy as np
 from numpy import random as rd
-import time
+
 
 def generate_number():
     """Generates a array with 5 random numbers from 0 to 9"""
@@ -83,11 +83,13 @@ class Game(tk.Frame):
                           disabledforeground = box["fg"],
                           state = "disable")
         self.guess_row += 1
+
         if self.guess_row > 5:
             self.guess_button.config(text = "Try Again",
-                                     command = lambda: print("WIP"))
+                                     command = lambda: self._clear_boxes(rows))
             print("You Lost!")
             return
+        
         if next_row == True:
             for box in rows[self.guess_row]:
                 box.configure(state = "normal")
@@ -98,8 +100,14 @@ class Game(tk.Frame):
                 box.delete(0, tk.END)
                 box.configure(bg = "White",
                               state = "disabled")
+                
         for box in rows[0]:
             box.configure(state = "normal")
+
+        self.guess_row = 0
+        random_number = generate_number()
+        self.guess_button.configure(text = "Guess",
+                                    command = lambda: self._check_guess(rows, random_number))
 
 
     def _create_boxes(self, app_window):
@@ -111,9 +119,11 @@ class Game(tk.Frame):
         Returns:
         Boxes (Array): Array containing the boxes created
         """
-        validation_command = app_window.register(self._validate_entry)
         boxes_holder = tk.Label(self)
         boxes_holder.pack(anchor = "n")
+
+        validation_command = app_window.register(self._validate_entry)
+
         rows = [[] for _ in range(6)]
         for i in range(6):
             for j in range(5):
@@ -131,8 +141,10 @@ class Game(tk.Frame):
                          column = j,
                          sticky = "ns")
                 rows[i].append(box)
+
         for box in rows[0]:
             box.configure(state = "normal")
+
         return rows
 
     def _validate_entry(self, entry_text):
@@ -147,8 +159,10 @@ class Game(tk.Frame):
         """
         if entry_text == "":
             return True
+        
         elif entry_text.isdigit() and len(entry_text) == 1:
             return True
+        
         return False
 
 

@@ -51,9 +51,12 @@ class Game(tk.Frame):
 
     def _check_guess(self, rows, random_number):
         """Checks the users guess"""
+        for box in rows[self.guess_row]:
+            if box.get() == "":
+                print("WIP way to prevent typing nothing")
+                return
 
         target = np.copy(random_number)
-
         for i, box in enumerate(rows[self.guess_row]):
             if int(box.get()) == target[i]:
                 target[i] = True
@@ -62,7 +65,6 @@ class Game(tk.Frame):
                 box.configure(bg = "Gray")
         
         if np.all(target == True):
-            print("Nice!")
             self._update_boxes(rows, False)
             self.guess_button.config(text = "Play Again",
                                      command = lambda: self._clear_boxes(rows))
@@ -87,7 +89,6 @@ class Game(tk.Frame):
         if self.guess_row > 5:
             self.guess_button.config(text = "Try Again",
                                      command = lambda: self._clear_boxes(rows))
-            print("You Lost!")
             return
         
         if next_row == True:
@@ -97,12 +98,10 @@ class Game(tk.Frame):
     def _clear_boxes(self, rows):
         for boxes in rows:
             for box in boxes:
-                print("Box bf clean:", box.get())
                 box.configure(state = "normal")
                 box.delete(0, tk.END)
                 box.configure(bg = "White",
                               state = "disabled")
-                print("Box after clearing:", box.get())
                 
         for box in rows[0]:
             box.configure(state = "normal")
@@ -111,7 +110,6 @@ class Game(tk.Frame):
         random_number = generate_number()
         self.guess_button.configure(text = "Guess",
                                     command = lambda: self._check_guess(rows, random_number))
-
 
     def _create_boxes(self, app_window):
         """Creates the boxes for the user to guess the number
@@ -145,10 +143,18 @@ class Game(tk.Frame):
                          sticky = "ns")
                 rows[i].append(box)
 
+        for boxes in rows:
+            for box in boxes:
+                box.bind("<KeyRelease>", self._focus_next_box)
+
         for box in rows[0]:
             box.configure(state = "normal")
 
         return rows
+    
+    def _focus_next_box(self, event):
+        if event.char.isdigit():
+            event.widget.tk_focusNext().focus()
 
     def _validate_entry(self, entry_text):
         """Validates that each box can only have 1 digit

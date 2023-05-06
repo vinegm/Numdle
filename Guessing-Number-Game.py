@@ -97,9 +97,12 @@ class Game(tk.Frame):
     def _clear_boxes(self, rows):
         for boxes in rows:
             for box in boxes:
+                print("Box bf clean:", box.get())
+                box.configure(state = "normal")
                 box.delete(0, tk.END)
                 box.configure(bg = "White",
                               state = "disabled")
+                print("Box after clearing:", box.get())
                 
         for box in rows[0]:
             box.configure(state = "normal")

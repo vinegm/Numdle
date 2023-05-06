@@ -41,57 +41,67 @@ class Game(tk.Frame):
                     padx = 10)
 
         random_number = generate_number()
-        boxes = self._create_boxes(master)
+        rows = self._create_boxes(master)
 
         self.guess_row = 0
-        guess_button = tk.Button(self,
+        self.guess_button = tk.Button(self,
                                  text = "Guess",
-                                 command = lambda: self._check_guess(boxes, random_number))
-        guess_button.pack(anchor = "n")
+                                 command = lambda: self._check_guess(rows, random_number))
+        self.guess_button.pack(anchor = "n")
 
-    def _check_guess(self, boxes, random_number):
+    def _check_guess(self, rows, random_number):
         """Checks the users guess"""
-        guess_row = self.guess_row   
-        if guess_row > 5:
-            print("you lost!")
-            return
 
         target = np.copy(random_number)
-        correct_number = 0
 
-        for i, box in enumerate(boxes[guess_row]):
+        for i, box in enumerate(rows[self.guess_row]):
             if int(box.get()) == target[i]:
-                target[i] = -1
-                correct_number += 1
+                target[i] = True
                 box.configure(bg = "Green")
             else:
                 box.configure(bg = "Gray")
-                for j in target:
-                    if int(box.get()) == j and box["bg"] != "Green":
-                        box.configure(bg = "Yellow")
-                        break
-
-        if correct_number == 5:
-            print("You Guessed It!")
+        
+        if np.all(target == True):
+            print("Nice!")
+            self._update_boxes(rows, False)
+            self.guess_button.config(text = "Play Again",
+                                     command = lambda: self._clear_boxes(rows))
             return
-        
-        # for box in boxes[guess_row]:
-        #     for j in target:
-        #         if int(box.get()) == j:
-        #             box.configure(bg = "Yellow")
-        #             break
-        
-        self._update_boxes(boxes)
 
-    def _update_boxes(self, boxes):
-        for box in boxes[self.guess_row]:
+        for box in rows[self.guess_row]:
+            for i, number in enumerate(target):
+                if int(box.get()) == number and box["bg"] != "Green":
+                    target[i] = True
+                    box.configure(bg = "Yellow")
+                    break
+        
+        self._update_boxes(rows)
+
+    def _update_boxes(self, rows, next_row = True):
+        for box in rows[self.guess_row]:
             box.configure(disabledbackground = box["bg"],
                           disabledforeground = box["fg"],
                           state = "disable")
         self.guess_row += 1
-        for box in boxes[self.guess_row]:
-            box.configure(state = "normal")
+        if self.guess_row > 5:
+            self.guess_button.config(text = "Try Again",
+                                     command = lambda: print("WIP"))
+            print("You Lost!")
+            return
+        if next_row == True:
+            for box in rows[self.guess_row]:
+                box.configure(state = "normal")
     
+    def _clear_boxes(self, rows):
+        for boxes in rows:
+            for box in boxes:
+                box.delete(0, tk.END)
+                box.configure(bg = "White",
+                              state = "disabled")
+        for box in rows[0]:
+            box.configure(state = "normal")
+
+
     def _create_boxes(self, app_window):
         """Creates the boxes for the user to guess the number
         
@@ -104,7 +114,7 @@ class Game(tk.Frame):
         validation_command = app_window.register(self._validate_entry)
         boxes_holder = tk.Label(self)
         boxes_holder.pack(anchor = "n")
-        boxes = [[] for _ in range(6)]
+        rows = [[] for _ in range(6)]
         for i in range(6):
             for j in range(5):
                 box = tk.Entry(boxes_holder,
@@ -120,10 +130,10 @@ class Game(tk.Frame):
                          row = i+1,
                          column = j,
                          sticky = "ns")
-                boxes[i].append(box)
-        for box in boxes[0]:
+                rows[i].append(box)
+        for box in rows[0]:
             box.configure(state = "normal")
-        return boxes
+        return rows
 
     def _validate_entry(self, entry_text):
         """Validates that each box can only have 1 digit

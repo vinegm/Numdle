@@ -4,26 +4,14 @@ Guessing Number Game
 """
 import tkinter as tk
 import numpy as np
-import random
-
-class Number():
-    def __init__(self, value, found):
-        self.value = value
-        self.found = found
-
-
-def print_number(array):  # Only use this if you are a cheater
-    full_number = []
-    for number in array:
-        full_number = np.append(full_number, number.value)
-    print(f"Generated number: {full_number}")
+from numpy import random as rd
+import time
 
 def generate_number():
     """Generates a array with 5 random numbers from 0 to 9"""
-    random_number = np.array(Number(random.randint(1, 9), 0))
-    for i in range(4):
-        random_number = np.append(random_number, Number(random.randint(0,9), 0))
-    print_number(random_number)  # Used for testing ONLY
+    random_number = np.array(rd.randint(1, 10, 1))
+    random_number = np.append(random_number, rd.randint(0, 10, 4))
+    print(random_number)  # Used for testing ONLY
     return random_number
 
 
@@ -55,21 +43,47 @@ class Game(tk.Frame):
         random_number = generate_number()
         boxes = self._create_boxes(master)
 
+        self.guess_row = 0
         guess_button = tk.Button(self,
                                  text = "Guess",
                                  command = lambda: self._check_guess(boxes, random_number))
         guess_button.pack(anchor = "n")
 
     def _check_guess(self, boxes, random_number):
-        """Checks the users guess"""
-        guess = []
-        for box in boxes[0]:
-            guess.append(int(box.get()))
-        for i, number in enumerate(guess):
-            if number == random_number[i].value:
-                random_number[i].found = 1
-                break
+        """Checks the users guess"""     
+        if self.guess_row >= 5:
+            print("you lost!")
+            return
+
+        target = np.copy(random_number)
+        correct_number = 0
+
+        for i, box in enumerate(boxes[self.guess_row]):
+            if int(box.get()) == target[i]:
+                target[i] = -1
+                correct_number += 1
+                box.configure(bg = "Green")
+
+        if correct_number == 5:
+            print("You Guessed It!")
+            return
         
+        for box in boxes[self.guess_row]:
+            for j in target:
+                if int(box.get()) == j:
+                    box.configure(bg = "Yellow")
+                    break
+        
+        self.guess_row += 1
+        self._update_boxes(boxes, self.guess_row)
+
+    def _update_boxes(self, boxes, row):
+        for box in boxes[row]:
+            box.configure(state = "normal")
+        for box in boxes[row-1]:
+            box.configure(disabledbackground = box["bg"],
+                          disabledforeground = box["fg"],
+                          state = "disable")
     
     def _create_boxes(self, app_window):
         """Creates the boxes for the user to guess the number
@@ -88,6 +102,8 @@ class Game(tk.Frame):
             for j in range(5):
                 box = tk.Entry(boxes_holder,
                                font = ("Arial", 12),
+                               justify = "center",
+                               fg = "Black",
                                width = 5,
                                state = "disabled",
                                validate = "key",

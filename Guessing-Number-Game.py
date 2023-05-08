@@ -80,6 +80,7 @@ class Game(tk.Frame):
         self._update_boxes(rows)
 
     def _update_boxes(self, rows, next_row = True):
+        """Disables the boxes in the guess row and unlocks the boxes in the next if the number wasn't guessed"""
         for box in rows[self.guess_row]:
             box.configure(disabledbackground = box["bg"],
                           disabledforeground = box["fg"],
@@ -96,6 +97,7 @@ class Game(tk.Frame):
                 box.configure(state = "normal")
     
     def _clear_boxes(self, rows):
+        """Clears the guess boxes and resets their colours"""
         for boxes in rows:
             for box in boxes:
                 box.configure(state = "normal")

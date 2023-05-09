@@ -24,7 +24,7 @@ class GuessingNumberGame(tk.Tk):
         self.geometry("400x400")
         self.eval("tk::PlaceWindow . center")
 
-        game_frame = Game (self)
+        game_frame = Game(self)
         game_frame.pack(anchor = "n")
 
 
@@ -34,15 +34,22 @@ class Game(tk.Frame):
         tk.Frame.__init__(self, master)
 
         header = tk.Label(self,
-                          text = "Welcome to a Number Guessing Game!",
-                          font = ("Arial", 12, "bold"))
+                          text = "Can You Guess the Number?",
+                          font = ("Arial", 16, "bold"))
         header.pack(anchor = "n",
-                    pady = 20,
+                    pady = 5,
                     padx = 10)
+        
+        self.info = tk.Label(self,
+                             text = "",
+                             font = ("Arial", 12))
+        self.info.pack(anchor = "n",
+                       pady = 5)
 
         random_number = generate_number()
         rows = self._create_boxes(master)
 
+        self.consecutive_wins = 0
         self.guess_row = 0
         self.guess_button = tk.Button(self,
                                  text = "Guess",
@@ -69,6 +76,8 @@ class Game(tk.Frame):
             self._update_boxes(rows, False)
             self.guess_button.config(text = "Play Again",
                                      command = lambda: self._clear_boxes(rows))
+            self.info.configure(text = "Yes you can!")
+            self.consecutive_wins += 1 
             return
 
         for box in rows[self.guess_row]:
@@ -78,20 +87,22 @@ class Game(tk.Frame):
                     box.configure(bg = "Yellow")
                     break
         
-        self._update_boxes(rows)
+        if self.guess_row > 4:
+            self.guess_button.config(text = "Try Again",
+                                     command = lambda: self._clear_boxes(rows))
+            self.info.configure(text = f"The number was {''.join(map(str, random_number))}")
+            self.consecutive_wins = 0
+            self._update_boxes(rows, False)
+        else:
+            self._update_boxes(rows)
 
     def _update_boxes(self, rows, next_row = True):
         """Disables the boxes in the guess row and unlocks the boxes in the next if the number wasn't guessed"""
         for box in rows[self.guess_row]:
             box.configure(disabledbackground = box["bg"],
                           state = "disable")
+            
         self.guess_row += 1
-
-        if self.guess_row > 5:
-            self.guess_button.config(text = "Try Again",
-                                     command = lambda: self._clear_boxes(rows))
-            return
-        
         if next_row == True:
             for box in rows[self.guess_row]:
                 box.configure(state = "normal",
@@ -102,7 +113,7 @@ class Game(tk.Frame):
         for boxes in rows:
             for box in boxes:
                 box.configure(state = "normal",
-                              bg = "White")
+                              bg = "#f0f0f0")
                 box.delete(0, tk.END)
                 box.configure(disabledbackground = box["bg"],
                               state = "disable")
@@ -112,6 +123,7 @@ class Game(tk.Frame):
                           bg = "White")
 
         self.guess_row = 0
+        self.info.configure(text = f"Wins in a Row: {self.consecutive_wins}")
         random_number = generate_number()
         self.guess_button.configure(text = "Guess",
                                     command = lambda: self._check_guess(rows, random_number))

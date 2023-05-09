@@ -55,16 +55,17 @@ class Game(tk.Frame):
             if box.get() == "":
                 print("WIP way to prevent typing nothing")
                 return
+        _found = -1
 
         target = np.copy(random_number)
         for i, box in enumerate(rows[self.guess_row]):
             if int(box.get()) == target[i]:
-                target[i] = True
+                target[i] = _found
                 box.configure(bg = "Green")
             else:
                 box.configure(bg = "Gray")
         
-        if np.all(target == True):
+        if np.all(target == _found):
             self._update_boxes(rows, False)
             self.guess_button.config(text = "Play Again",
                                      command = lambda: self._clear_boxes(rows))
@@ -73,7 +74,7 @@ class Game(tk.Frame):
         for box in rows[self.guess_row]:
             for i, number in enumerate(target):
                 if int(box.get()) == number and box["bg"] != "Green":
-                    target[i] = True
+                    target[i] = _found
                     box.configure(bg = "Yellow")
                     break
         
@@ -83,7 +84,6 @@ class Game(tk.Frame):
         """Disables the boxes in the guess row and unlocks the boxes in the next if the number wasn't guessed"""
         for box in rows[self.guess_row]:
             box.configure(disabledbackground = box["bg"],
-                          disabledforeground = box["fg"],
                           state = "disable")
         self.guess_row += 1
 
@@ -94,19 +94,22 @@ class Game(tk.Frame):
         
         if next_row == True:
             for box in rows[self.guess_row]:
-                box.configure(state = "normal")
+                box.configure(state = "normal",
+                              bg = "White")
     
     def _clear_boxes(self, rows):
         """Clears the guess boxes and resets their colours"""
         for boxes in rows:
             for box in boxes:
-                box.configure(state = "normal")
+                box.configure(state = "normal",
+                              bg = "White")
                 box.delete(0, tk.END)
-                box.configure(bg = "White",
-                              state = "disabled")
-                
+                box.configure(disabledbackground = box["bg"],
+                              state = "disable")
+
         for box in rows[0]:
-            box.configure(state = "normal")
+            box.configure(state = "normal",
+                          bg = "White")
 
         self.guess_row = 0
         random_number = generate_number()
@@ -134,10 +137,13 @@ class Game(tk.Frame):
                                font = ("Arial", 12),
                                justify = "center",
                                fg = "Black",
+                               bg = "#f0f0f0",
                                width = 5,
                                state = "disabled",
                                validate = "key",
                                validatecommand=(validation_command, '%P'))
+                box.configure(disabledforeground = box["fg"],
+                              disabledbackground = box["bg"])
                 box.grid(padx = 5,
                          pady = 10,
                          row = i+1,
@@ -150,7 +156,8 @@ class Game(tk.Frame):
                 box.bind("<KeyRelease>", self._focus_next_box)
 
         for box in rows[0]:
-            box.configure(state = "normal")
+            box.configure(state = "normal",
+                          bg = "White")
 
         return rows
     

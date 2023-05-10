@@ -29,23 +29,6 @@ def create_leaderboard(connection):
     cursor.close()
 
 
-def select_player(connection, player):
-    cursor = connection.cursor()
-    cursor.execute("""SELECT * FROM leaderboard WHERE player = ?""", (player,))
-    result = cursor.fetchone()
-    if result == None:
-        create_player(connection, player)
-        result = select_player(connection, player)
-    return result
-
-
-def create_player(connection, player):
-    cursor = connection.cursor()
-    cursor.execute("INSERT INTO leaderboard (player, score) VALUES (?, ?)", (player, 0))
-    connection.commit()
-    cursor.close()
-
-
 class GuessingNumberGame(tk.Tk):
     """Window of the game"""
     def __init__(self):
@@ -72,6 +55,7 @@ class Game(tk.Frame):
     """Frame where you can play and guess"""
     def __init__(self, connection, master, window):
         tk.Frame.__init__(self, master)
+        self.connection = connection
 
         header_holder = tk.Frame(self)
         header_holder.pack(anchor = "center",
@@ -87,12 +71,14 @@ class Game(tk.Frame):
         profile_image.thumbnail((30, 30))
         profile_image = ImageTk.PhotoImage(profile_image)
 
+        self.player = [None, "Guest", 0]
         profile = tk.Label(leaderboard_profile,
                            image = profile_image)
         profile.image = profile_image
         profile.grid(row = 0,
                      column = 0,
                      sticky = "e")
+        profile.bind("<Button-1>", lambda event: self._select_player(simpledialog.askstring("Who are you?", f"Currently playing as: {self.player[1]}\nType a different nickname to change player:")))
 
         leaderboard_image = Image.open("assets/Leaderboard.png")
         leaderboard_image.thumbnail((30, 30))
@@ -113,19 +99,12 @@ class Game(tk.Frame):
                     padx = 65,
                     sticky = "nsew")
         
-        self.player_PB = 0
         self.personal_best = tk.Label(header_holder,
-                                      text = f"PB: {self.player_PB}",
+                                      text = f"PB: {self.player[2]}",
                                       font = ("Arial", 12, "bold"))
         self.personal_best.grid(row = 0,
                                 column = 2,
                                 sticky = "e")
-        
-        # player = simpledialog.askstring("Who are you?", "Enter your nickname:")
-        
-        # player_nick = tk.Label(info_holder,
-        #                        text = "Guest")
-        # player_nick.pack(side = "left")
 
         self.info = tk.Label(self,
                              text = "",
@@ -165,9 +144,9 @@ class Game(tk.Frame):
                                      command = lambda: self._clear_boxes(rows))
             self.info.configure(text = "Yes you can!")
             self.consecutive_wins += 1
-            if self.consecutive_wins > self.player_PB:
-                self.player_PB = self.consecutive_wins
-                self.personal_best.configure(text = f"PB: {self.player_PB}")
+            if self.consecutive_wins > self.player[2]:
+                self.player[2] = self.consecutive_wins
+                self.personal_best.configure(text = f"PB: {self.player[2]}")
             return
 
         for box in rows[self.guess_row]:
@@ -182,6 +161,8 @@ class Game(tk.Frame):
                                      command = lambda: self._clear_boxes(rows))
             self.info.configure(text = f"The number was {''.join(map(str, random_number))}")
             self.consecutive_wins = 0
+            if self.player[1] != "Guest":
+                self._update_PB()
             self._update_boxes(rows, False)
         else:
             self._update_boxes(rows)
@@ -285,6 +266,38 @@ class Game(tk.Frame):
         
         return False
 
+    def _select_player(self, player):
+        if player == None or player == "":
+            return
+        
+        self._update_PB()
+        cursor = self.connection.cursor()
+        cursor.execute("""SELECT * FROM leaderboard WHERE player = ?""", (player,))
+        result = cursor.fetchone()
+
+        if result == None:
+            self._create_player(player)
+            cursor.execute("""SELECT * FROM leaderboard WHERE player = ?""", (player,))
+            result = cursor.fetchone()
+        
+        cursor.close()
+        self.player = list(result)
+        self.personal_best.configure(text = f"PB: {self.player[2]}")
+        self.info.configure(text = "")
+
+    def _create_player(self, player):
+        cursor = self.connection.cursor()
+
+        cursor.execute("INSERT INTO leaderboard (player, score) VALUES (?, ?)", (player, 0))
+        self.connection.commit()
+
+        cursor.close()
+
+    def _update_PB(self):
+        cursor = self.connection.cursor()
+        cursor.execute("""UPDATE leaderboard SET score = ? WHERE id = ?""", (self.player[2], self.player[0]))
+        self.connection.commit()
+        cursor.close()
 
 class Leaderboard (tk.Frame):
     """Frame for displaying the top 10 best plays and a player best score"""

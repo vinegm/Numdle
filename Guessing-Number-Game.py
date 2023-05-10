@@ -4,6 +4,9 @@ Guessing Number Game
 """
 import tkinter as tk
 from tkinter import messagebox
+import tkinter.simpledialog as simpledialog
+from PIL import Image, ImageTk
+import sqlite3
 import numpy as np
 from numpy import random as rd
 
@@ -16,6 +19,33 @@ def generate_number():
     return random_number
 
 
+def create_leaderboard(connection):
+    cursor = connection.cursor()
+    cursor.execute("""CREATE TABLE IF NOT EXISTS leaderboard (
+                   id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   player VARCHAR NOT NULL UNIQUE,
+                   score INTEGER NOT NULL
+                   )""")
+    cursor.close()
+
+
+def select_player(connection, player):
+    cursor = connection.cursor()
+    cursor.execute("""SELECT * FROM leaderboard WHERE player = ?""", (player,))
+    result = cursor.fetchone()
+    if result == None:
+        create_player(connection, player)
+        result = select_player(connection, player)
+    return result
+
+
+def create_player(connection, player):
+    cursor = connection.cursor()
+    cursor.execute("INSERT INTO leaderboard (player, score) VALUES (?, ?)", (player, 0))
+    connection.commit()
+    cursor.close()
+
+
 class GuessingNumberGame(tk.Tk):
     """Window of the game"""
     def __init__(self):
@@ -23,29 +53,84 @@ class GuessingNumberGame(tk.Tk):
 
         self.title("Guessing Number Game")
         self.geometry("400x400")
+        self.resizable(False, False)
         self.eval("tk::PlaceWindow . center")
 
-        game_frame = Game(self)
-        game_frame.pack(anchor = "n")
+        leaderboard = sqlite3.connect("assets/Leaderboard.db")
+        create_leaderboard(leaderboard)
+
+        frames_holder = tk.Frame(self)
+        frames_holder.pack(anchor = "center")
+
+        game_frame = Game(leaderboard, frames_holder, self)
+        game_frame.grid(row = 0,
+                        column = 0,
+                        sticky = "nsew")
 
 
 class Game(tk.Frame):
     """Frame where you can play and guess"""
-    def __init__(self, master):
+    def __init__(self, connection, master, window):
         tk.Frame.__init__(self, master)
 
-        header = tk.Label(self,
-                          text = "Can You Guess the Number?",
-                          font = ("Arial", 16, "bold"))
-        header.pack(anchor = "n",
-                    pady = 5,
-                    padx = 10)
+        header_holder = tk.Frame(self)
+        header_holder.pack(anchor = "center",
+                           fill = "x",
+                           pady = 5)
         
+        leaderboard_profile = tk.Frame(header_holder)
+        leaderboard_profile.grid(row = 0,
+                                 column = 0,
+                                 sticky = "w")
+
+        profile_image = Image.open("assets/Profile.png")
+        profile_image.thumbnail((30, 30))
+        profile_image = ImageTk.PhotoImage(profile_image)
+
+        profile = tk.Label(leaderboard_profile,
+                           image = profile_image)
+        profile.image = profile_image
+        profile.grid(row = 0,
+                     column = 0,
+                     sticky = "e")
+
+        leaderboard_image = Image.open("assets/Leaderboard.png")
+        leaderboard_image.thumbnail((30, 30))
+        leaderboard_image = ImageTk.PhotoImage(leaderboard_image)
+
+        open_leaderboard = tk.Label(leaderboard_profile,
+                                    image = leaderboard_image)
+        open_leaderboard.image = leaderboard_image
+        open_leaderboard.grid(row = 0,
+                              column = 1,
+                              sticky = "w")
+
+        header = tk.Label(header_holder,
+                          text = "Numdle",
+                          font = ("Arial", 16, "bold"))
+        header.grid(row = 0,
+                    column = 1,
+                    padx = 65,
+                    sticky = "nsew")
+        
+        self.player_PB = 0
+        self.personal_best = tk.Label(header_holder,
+                                      text = f"PB: {self.player_PB}",
+                                      font = ("Arial", 12, "bold"))
+        self.personal_best.grid(row = 0,
+                                column = 2,
+                                sticky = "e")
+        
+        # player = simpledialog.askstring("Who are you?", "Enter your nickname:")
+        
+        # player_nick = tk.Label(info_holder,
+        #                        text = "Guest")
+        # player_nick.pack(side = "left")
+
         self.info = tk.Label(self,
                              text = "",
                              font = ("Arial", 12))
-        self.info.pack(anchor = "n",
-                       pady = 5)
+        self.info.pack(anchor = "center")
 
         random_number = generate_number()
         rows = self._create_boxes(master)
@@ -79,7 +164,10 @@ class Game(tk.Frame):
             self.guess_button.config(text = "Play Again",
                                      command = lambda: self._clear_boxes(rows))
             self.info.configure(text = "Yes you can!")
-            self.consecutive_wins += 1 
+            self.consecutive_wins += 1
+            if self.consecutive_wins > self.player_PB:
+                self.player_PB = self.consecutive_wins
+                self.personal_best.configure(text = f"PB: {self.player_PB}")
             return
 
         for box in rows[self.guess_row]:
@@ -196,6 +284,12 @@ class Game(tk.Frame):
             return True
         
         return False
+
+
+class Leaderboard (tk.Frame):
+    """Frame for displaying the top 10 best plays and a player best score"""
+    def __init__(self, master):
+        tk.Frame.__init__(self, master)
 
 
 if __name__ == "__main__":

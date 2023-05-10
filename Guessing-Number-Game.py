@@ -3,6 +3,7 @@ Guessing Number Game
  Inspired by wordle/termo
 """
 import tkinter as tk
+from tkinter import messagebox
 import numpy as np
 from numpy import random as rd
 
@@ -11,7 +12,7 @@ def generate_number():
     """Generates a array with 5 random numbers from 0 to 9"""
     random_number = np.array(rd.randint(1, 10, 1))
     random_number = np.append(random_number, rd.randint(0, 10, 4))
-    print(random_number)  # Used for testing ONLY
+    # print(random_number)  # Used for testing ONLY
     return random_number
 
 
@@ -60,7 +61,8 @@ class Game(tk.Frame):
         """Checks the users guess"""
         for box in rows[self.guess_row]:
             if box.get() == "":
-                print("WIP way to prevent typing nothing")
+                messagebox.showwarning(title = "Fill the Boxes",
+                                     message = "You have to fill all the\nboxes to make a guess!")
                 return
         _found = -1
 
@@ -165,7 +167,7 @@ class Game(tk.Frame):
 
         for boxes in rows:
             for box in boxes:
-                box.bind("<KeyRelease>", self._focus_next_box)
+                box.bind("<KeyPress>", self._focus_next_box)
 
         for box in rows[0]:
             box.configure(state = "normal",

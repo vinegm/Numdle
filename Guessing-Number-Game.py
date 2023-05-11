@@ -15,7 +15,7 @@ def generate_number():
     """Generates a array with 5 random numbers from 0 to 9"""
     random_number = np.array(rd.randint(1, 10, 1))
     random_number = np.append(random_number, rd.randint(0, 10, 4))
-    # print(random_number)  # Used for testing ONLY
+    print(random_number)  # Used for testing ONLY
     return random_number
 
 
@@ -48,17 +48,17 @@ class GuessingNumberGame(tk.Tk):
         frames_holder.pack(anchor = "center")
 
         self.frames = {}
-        game_frame = Game(leaderboard, frames_holder, self)
-        game_frame.grid(row = 0,
-                        column = 0,
-                        sticky = "nsew")
-        self.frames[Game.__name__] = game_frame
-
         leaderboard_frame = Leaderboard(leaderboard, frames_holder, self, None)
         leaderboard_frame.grid(row = 0,
                                column = 0,
                                sticky = "nsew")
         self.frames[Leaderboard.__name__] = leaderboard_frame
+
+        game_frame = Game(leaderboard, frames_holder, leaderboard_frame, self)
+        game_frame.grid(row = 0,
+                        column = 0,
+                        sticky = "nsew")
+        self.frames[Game.__name__] = game_frame
 
         self.change_frame("Game")
         
@@ -69,10 +69,11 @@ class GuessingNumberGame(tk.Tk):
 
 class Game(tk.Frame):
     """Frame where you can play and guess"""
-    def __init__(self, connection, master, window):
+    def __init__(self, connection, master, leaderboard, window):
         tk.Frame.__init__(self, master)
         self.window = window
         self.connection = connection
+        self.leaderboard = leaderboard 
 
         header_holder = tk.Frame(self)
         header_holder.pack(anchor = "center",
@@ -109,7 +110,7 @@ class Game(tk.Frame):
         open_leaderboard.grid(row = 0,
                               column = 0,
                               sticky = "w")
-        open_leaderboard.bind("<Button-1>", lambda event: window.change_frame("Leaderboard"))
+        open_leaderboard.bind("<Button-1>", lambda event: self.window.change_frame("Leaderboard"))
 
         header = tk.Label(header_holder,
                           text = "Numdle",
@@ -318,6 +319,7 @@ class Game(tk.Frame):
         self.score = 0
         self.consecutive_wins = 0
 
+        self.leaderboard._reload_player(self.player)
         self._clear_boxes(rows)
         self.info.configure(text = "")
 
@@ -331,12 +333,16 @@ class Game(tk.Frame):
 
     def _update_status(self):
         cursor = self.connection.cursor()
+        
         if self.player[2] < self.score and self.player[3] < self.consecutive_wins:
             cursor.execute("""UPDATE leaderboard SET score = ?, consecutive_wins = ?  WHERE id = ?""", (self.score, self.consecutive_wins, self.player[0]))
+
         elif self.player[2] < self.score:
             cursor.execute("""UPDATE leaderboard SET score = ?  WHERE id = ?""", (self.score, self.player[0]))
+
         elif self.player[3] < self.consecutive_wins:
             cursor.execute("""UPDATE leaderboard SET consecutive_wins = ?  WHERE id = ?""", (self.consecutive_wins, self.player[0]))
+
         self.connection.commit()
         cursor.close()
 
@@ -362,22 +368,23 @@ class Leaderboard (tk.Frame):
         back.bind("<Button-1>", lambda event: window.change_frame("Game"))
 
         header = tk.Label(header_holder,
-                          text = "Leaderboard:",
+                          text = "Leaderboard",
                           font = ("Arial", 16, "bold"))
         header.pack(side = "left",
-                    padx = 65)
+                    padx = 70)
 
+        self._build_leaderboard(connection)
+        self._display_player(player)
+
+    def _build_leaderboard(self, connection):
         leaderboard_holder = tk.Frame(self)
         leaderboard_holder.pack(anchor = "center",
                                 fill = "both")
         
-        self.build_leaderboard(leaderboard_holder, connection)
-
-    def build_leaderboard(self, master, connection):
-        master.grid_columnconfigure(0, minsize = 50)
-        master.grid_columnconfigure(list(range(1, 4)), minsize = 75)
-        rank_column = tk.Label(master,
-                               text = "Rank:",
+        leaderboard_holder.grid_columnconfigure(0, minsize = 50)
+        leaderboard_holder.grid_columnconfigure(list(range(1, 4)), minsize = 100)
+        rank_column = tk.Label(leaderboard_holder,
+                               text = "Rank",
                                font = ("Arial", 12, "bold"),
                                bg = "Gray",
                                border = 1,
@@ -386,8 +393,8 @@ class Leaderboard (tk.Frame):
                          column = 0,
                          sticky = "nsew")
 
-        player_column = tk.Label(master,
-                                 text = "Player:",
+        player_column = tk.Label(leaderboard_holder,
+                                 text = "Player",
                                  font = ("Arial", 12, "bold"),
                                  border = 1,
                                  relief = "solid")
@@ -395,8 +402,8 @@ class Leaderboard (tk.Frame):
                            column = 1,
                            sticky = "nsew")
         
-        consecutive_wins_column = tk.Label(master,
-                                           text = "Wins in a Row:",
+        consecutive_wins_column = tk.Label(leaderboard_holder,
+                                           text = "Wins in a Row",
                                            font = ("Arial", 12, "bold"),
                                            bg = "Gray",
                                            border = 1,
@@ -405,8 +412,8 @@ class Leaderboard (tk.Frame):
                                      column = 2,
                                      sticky = "nsew")
         
-        score_column = tk.Label(master,
-                                text = "Score:",
+        score_column = tk.Label(leaderboard_holder,
+                                text = "Score",
                                 font = ("Arial", 12, "bold"),
                                 border = 1,
                                 relief = "solid")
@@ -415,7 +422,7 @@ class Leaderboard (tk.Frame):
                           sticky = "nsew")
         
         top_players = self._get_top_ten(connection)
-        self._populate_leaderboard(master, top_players)
+        self._populate_leaderboard(leaderboard_holder, top_players)
         
     def _get_top_ten(self, connection):
         cursor = connection.cursor()
@@ -479,7 +486,66 @@ class Leaderboard (tk.Frame):
                               column = 3,
                               sticky = "nsew")
 
+    def _display_player(self, player):
+        self.player_info = tk.Frame(self)
+        self.player_info.pack(anchor = "center",
+                              pady = 10)
+        self.player_info.grid_columnconfigure(0, minsize = 50)
+        self.player_info.grid_columnconfigure(list(range(1, 4)), minsize = 100)
 
+        if player == None:
+            not_saved = tk.Label(self.player_info,
+                                 text = "Guests Scores are not Tracked!",
+                                 font = ("Arial", 12, "bold"),
+                                 border = 1,
+                                 relief = "solid")
+            not_saved.grid(row = 0,
+                           column = 0, columnspan = 4,
+                           sticky = "nsew")
+            return
+        print(player)
+        player_id, player_nick, player_consecutive_wins, player_score = player
+        rank = tk.Label(self.player_info,
+                        text = "#",
+                        font = ("Arial", 12, "bold"),
+                        bg = "Gray",
+                        border = 1,
+                        relief = "solid")
+        rank.grid(row = 0,
+                  column = 0,
+                  sticky = "nsew")
+
+        player = tk.Label(self.player_info,
+                          text = player_nick,
+                          font = ("Arial", 12, "bold"),
+                          border = 1,
+                          relief = "solid")
+        player.grid(row = 0,
+                    column = 1,
+                    sticky = "nsew")
+        
+        consecutive_wins = tk.Label(self.player_info,
+                                    text = player_consecutive_wins,
+                                    font = ("Arial", 12, "bold"),
+                                    bg = "Gray",
+                                    border = 1,
+                                    relief = "solid")
+        consecutive_wins.grid(row = 0,
+                              column = 2,
+                              sticky = "nsew")
+        
+        score = tk.Label(self.player_info,
+                         text = player_score,
+                         font = ("Arial", 12, "bold"),
+                         border = 1,
+                         relief = "solid")
+        score.grid(row = 0,
+                   column = 3,
+                   sticky = "nsew")
+
+    def _reload_player(self, player):
+        self.player_info.destroy()
+        self._display_player(player)
 
 if __name__ == "__main__":
     app = GuessingNumberGame()

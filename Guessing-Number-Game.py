@@ -34,10 +34,11 @@ class GuessingNumberGame(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
 
-        self.title("Guessing Number Game")
+        self.title("Numdle (Guest)")
         self.geometry("400x400")
         self.resizable(False, False)
         self.eval("tk::PlaceWindow . center")
+        self.iconbitmap("assets/Icon.ico")
 
         leaderboard = sqlite3.connect("assets/Leaderboard.db")
         create_leaderboard(leaderboard)
@@ -55,6 +56,7 @@ class Game(tk.Frame):
     """Frame where you can play and guess"""
     def __init__(self, connection, master, window):
         tk.Frame.__init__(self, master)
+        self.window = window
         self.connection = connection
 
         header_holder = tk.Frame(self)
@@ -142,7 +144,7 @@ class Game(tk.Frame):
             self._update_boxes(rows, False)
             self.guess_button.config(text = "Play Again",
                                      command = lambda: self._clear_boxes(rows))
-            self.info.configure(text = "Yes you can!")
+            self.info.configure(text = "Nice, you got it!")
             self.consecutive_wins += 1
             if self.consecutive_wins > self.player[2]:
                 self.player[2] = self.consecutive_wins
@@ -284,6 +286,7 @@ class Game(tk.Frame):
         self.player = list(result)
         self.personal_best.configure(text = f"PB: {self.player[2]}")
         self.info.configure(text = "")
+        self.window.title(f"Numdle ({self.player[1]})")
 
     def _create_player(self, player):
         cursor = self.connection.cursor()

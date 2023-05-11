@@ -48,13 +48,17 @@ class GuessingNumberGame(tk.Tk):
         frames_holder.pack(anchor = "center")
 
         self.frames = {}
-        for f in (Game, Leaderboard):
-            frame_name = f.__name__
-            frame = f(leaderboard, frames_holder, self)
-            frame.grid(row = 0,
-                            column = 0,
-                            sticky = "nsew")
-            self.frames[frame_name] = frame
+        game_frame = Game(leaderboard, frames_holder, self)
+        game_frame.grid(row = 0,
+                        column = 0,
+                        sticky = "nsew")
+        self.frames[Game.__name__] = game_frame
+
+        leaderboard_frame = Leaderboard(leaderboard, frames_holder, self, None)
+        leaderboard_frame.grid(row = 0,
+                               column = 0,
+                               sticky = "nsew")
+        self.frames[Leaderboard.__name__] = leaderboard_frame
 
         self.change_frame("Game")
         
@@ -185,10 +189,10 @@ class Game(tk.Frame):
             self.guess_button.config(text = "Try Again",
                                      command = lambda: self._clear_boxes(rows))
             self.info.configure(text = f"The number was {''.join(map(str, random_number))}")
-            self.consecutive_wins = 0
             if self.player[1] != "Guest" and self.player[1] != "guest":
                 self._update_status()
             self._update_boxes(rows, False)
+            self.consecutive_wins = 0
         else:
             self._update_boxes(rows)
 
@@ -328,18 +332,18 @@ class Game(tk.Frame):
     def _update_status(self):
         cursor = self.connection.cursor()
         if self.player[2] < self.score and self.player[3] < self.consecutive_wins:
-            cursor.execute("""UPDATE leaderboard SET score = ?, consecutive_wins = ?  WHERE id = ?""", (self.player[2], self.player[3], self.player[0]))
+            cursor.execute("""UPDATE leaderboard SET score = ?, consecutive_wins = ?  WHERE id = ?""", (self.score, self.consecutive_wins, self.player[0]))
         elif self.player[2] < self.score:
-            cursor.execute("""UPDATE leaderboard SET score = ?  WHERE id = ?""", (self.player[2], self.player[0]))
+            cursor.execute("""UPDATE leaderboard SET score = ?  WHERE id = ?""", (self.score, self.player[0]))
         elif self.player[3] < self.consecutive_wins:
-            cursor.execute("""UPDATE leaderboard SET consecutive_wins = ?  WHERE id = ?""", (self.player[3], self.player[0]))
+            cursor.execute("""UPDATE leaderboard SET consecutive_wins = ?  WHERE id = ?""", (self.consecutive_wins, self.player[0]))
         self.connection.commit()
         cursor.close()
 
 
 class Leaderboard (tk.Frame):
     """Frame for displaying the top 10 best plays and a player best score"""
-    def __init__(self, connection, master, window):
+    def __init__(self, connection, master, window, player):
         tk.Frame.__init__(self, master)
         
         header_holder= tk.Frame(self)
@@ -367,14 +371,15 @@ class Leaderboard (tk.Frame):
         leaderboard_holder.pack(anchor = "center",
                                 fill = "both")
         
-        self.build_leaderboard(leaderboard_holder)
+        self.build_leaderboard(leaderboard_holder, connection)
 
-    def build_leaderboard(self, master):
+    def build_leaderboard(self, master, connection):
         master.grid_columnconfigure(0, minsize = 50)
         master.grid_columnconfigure(list(range(1, 4)), minsize = 75)
         rank_column = tk.Label(master,
                                text = "Rank:",
                                font = ("Arial", 12, "bold"),
+                               bg = "Gray",
                                border = 1,
                                relief = "solid")
         rank_column.grid(row = 0,
@@ -393,6 +398,7 @@ class Leaderboard (tk.Frame):
         consecutive_wins_column = tk.Label(master,
                                            text = "Wins in a Row:",
                                            font = ("Arial", 12, "bold"),
+                                           bg = "Gray",
                                            border = 1,
                                            relief = "solid")
         consecutive_wins_column.grid(row = 0,
@@ -407,6 +413,72 @@ class Leaderboard (tk.Frame):
         score_column.grid(row = 0,
                           column = 3,
                           sticky = "nsew")
+        
+        top_players = self._get_top_ten(connection)
+        self._populate_leaderboard(master, top_players)
+        
+    def _get_top_ten(self, connection):
+        cursor = connection.cursor()
+        cursor.execute("""SELECT * FROM Leaderboard ORDER BY score DESC LIMIT 10""")
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+
+    def _populate_leaderboard(self, master, players):
+        for i in range(1, 11):
+            try:
+                id, player, score, consecutive_wins = players[i-1]
+            except IndexError:
+                id, player, score, consecutive_wins = 0, "None", 0, 0
+
+            if i == 1:
+                medal = "Yellow"
+            elif i == 2:
+                medal = "#C0C0C0"
+            elif i == 3:
+                medal = "#cd7f32"
+            else:
+                medal = "Black"
+
+            rank_column = tk.Label(master,
+                                   text = i,
+                                   font = ("Arial", 12, "bold"),
+                                   fg = medal,
+                                   bg = "Gray",
+                                   border = 1,
+                                   relief = "solid")
+            rank_column.grid(row = i,
+                             column = 0,
+                             sticky = "nsew")
+
+            player_column = tk.Label(master,
+                                     text = player,
+                                     font = ("Arial", 12, "bold"),
+                                     border = 1,
+                                     relief = "solid")
+            player_column.grid(row = i,
+                               column = 1,
+                               sticky = "nsew")
+            
+            consecutive_wins_column = tk.Label(master,
+                                               text = consecutive_wins,
+                                               font = ("Arial", 12, "bold"),
+                                               bg = "Gray",
+                                               border = 1,
+                                               relief = "solid")
+            consecutive_wins_column.grid(row = i,
+                                         column = 2,
+                                         sticky = "nsew")
+            
+            score_column = tk.Label(master,
+                                    text = score,
+                                    font = ("Arial", 12, "bold"),
+                                    border = 1,
+                                    relief = "solid")
+            score_column.grid(row = i,
+                              column = 3,
+                              sticky = "nsew")
+
 
 
 if __name__ == "__main__":

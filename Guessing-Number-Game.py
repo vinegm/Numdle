@@ -98,7 +98,7 @@ class Game(tk.Frame):
         profile.grid(row = 0,
                      column = 1,
                      sticky = "e")
-        profile.bind("<Button-1>", lambda event: self._select_player(simpledialog.askstring("Who are you?", f"Currently playing as: {self.player[1]}\nType a different nickname to change player:"), rows))
+        profile.bind("<Button-1>", lambda event: self._change_player(simpledialog.askstring("Who are you?", f"Currently playing as: {self.player[1]}\nType a different nickname to change player:"), rows))
 
         leaderboard_image = Image.open("assets/Leaderboard.png")
         leaderboard_image.thumbnail((30, 30))
@@ -298,7 +298,7 @@ class Game(tk.Frame):
         
         return False
 
-    def _select_player(self, player, rows):
+    def _change_player(self, player, rows):
         if player == None or player == "":
             return
         
@@ -335,8 +335,8 @@ class Game(tk.Frame):
 
     def _update_status(self):
         cursor = self.connection.cursor()
-        update = False
 
+        update = False
         if self.player[2] < self.score and self.player[3] < self.consecutive_wins:
             cursor.execute("""UPDATE leaderboard SET score = ?, consecutive_wins = ?  WHERE id = ?""", (self.score, self.consecutive_wins, self.player[0]))
             update = True
@@ -352,6 +352,10 @@ class Game(tk.Frame):
         self.connection.commit()
         if update:
             self.leaderboard._reload_player(self.player)
+
+        if self.leaderboard.on_top_players and update:
+            self.leaderboard._reload_leaderboard()
+
         cursor.close()
 
 
@@ -448,7 +452,6 @@ class Leaderboard (tk.Frame):
             except IndexError:
                 id, player, score, consecutive_wins = False, "None", 0, 0
             self.top_players_ids.append(id)
-
             medal = self._check_medal(i)
 
             rank_column = tk.Label(master,
@@ -501,6 +504,7 @@ class Leaderboard (tk.Frame):
         self.player_info.grid_columnconfigure(0, minsize = 50)
         self.player_info.grid_columnconfigure(list(range(1, 4)), minsize = 100)
 
+        self.on_top_players = False
         if player == None:
             not_saved = tk.Label(self.player_info,
                                  text = "Guests Scores are not Tracked!",
@@ -511,17 +515,9 @@ class Leaderboard (tk.Frame):
                            column = 0, columnspan = 4,
                            sticky = "nsew")
             return
-        
-        player_id, player_nick, player_consecutive_wins, player_score = player
-        rank = False
-        for i, id in enumerate(self.top_players_ids):
-            if player_id == id:
-                rank = i+1
-                break
-            elif id == False:
-                break
-        medal = self._check_medal(rank)
-        
+        else:
+            player_id, player_nick, player_consecutive_wins, player_score = player
+            rank, medal = self._check_rank(player_id)
 
         rank = tk.Label(self.player_info,
                         text = f"{'#' if rank == False else rank}",
@@ -565,6 +561,19 @@ class Leaderboard (tk.Frame):
     def _reload_player(self, player):
         self.player_info.destroy()
         self._display_player(player)
+
+    def _check_rank(self, player_id):
+        rank = False
+        for i, id in enumerate(self.top_players_ids):
+            if player_id == id:
+                rank = i+1
+                self.on_top_players = True
+                break
+
+            elif id == False:
+                break
+
+        return rank, self._check_medal(rank)
 
     def _check_medal(self, rank):
         if rank == 1:

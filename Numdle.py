@@ -1,5 +1,5 @@
 """
-Guessing Number Game
+Numdle
  Inspired by wordle/termo
 """
 import tkinter as tk
@@ -442,7 +442,7 @@ class Game(tk.Frame):
 
         cursor.close()
 
-    def _update_status(self, leaderboard: tk.Frame, connection: sqlite3.Connection, changing_player = False):
+    def _update_status(self, leaderboard: tk.Frame, connection: sqlite3.Connection, changing_player: bool = False):
         """Updates the current player status
         
         Parameters:
@@ -497,9 +497,9 @@ class Game(tk.Frame):
         window.destroy()
 
 
-class Leaderboard (tk.Frame):
-    """Frame for displaying the top 10 best plays and a player best score"""
-    def __init__(self, connection, master, window):
+class Leaderboard(tk.Frame):
+    """Frame for displaying the top 10 best players and the current player best score"""
+    def __init__(self, connection: sqlite3.Connection, master: tk.Frame, window: tk.Tk):
         tk.Frame.__init__(self, master, bg = "#6e5c62")
 
         header_holder= tk.Frame(self,
@@ -530,7 +530,13 @@ class Leaderboard (tk.Frame):
         self._build_leaderboard(connection)
         self._display_player()
 
-    def _build_leaderboard(self, connection, current_player = None):
+    def _build_leaderboard(self, connection: sqlite3.Connection, current_player: list = None):
+        """Builds the leaderboard heads
+        
+        Parameters:
+        connection(sqlite3.Connection): Connection to the database
+        current_player(list): List with the data of the current player
+        """
         self.leaderboard_holder = tk.Frame(self,
                                            bg = "#6e5c62")
         self.leaderboard_holder.pack(anchor = "center",
@@ -588,16 +594,34 @@ class Leaderboard (tk.Frame):
         top_players = self._get_top_ten(connection)
         self._populate_leaderboard(self.leaderboard_holder, top_players, current_player)
         
-    def _get_top_ten(self, connection):
+    def _get_top_ten(self, connection: sqlite3.Connection) -> list:
+        """Gets the top 10 players from the database, based on score
+
+        Parameters:
+        connection(sqlite3.Connection): Connection to the database
+
+        Returns:
+        results(list): List of tuples containing the players data
+        """
         cursor = connection.cursor()
+
         cursor.execute("""SELECT * FROM Leaderboard ORDER BY score DESC LIMIT 10""")
         results = cursor.fetchall()
+        
         cursor.close()
         return results
 
-    def _populate_leaderboard(self, master, top_players, current_player):
+    def _populate_leaderboard(self, master: tk.Frame, top_players: list, current_player: list):
+        """Populate the leaderboard with the top 10 players
+        
+        Parameters:
+        master(tk.Frame): Frame that holds the leaderboard
+        top_players(list): List of 10 tuples conteining the players data
+        current_player(list): List with the current player data
+        """
         self.top_players_ids = []
         for i in range(1, 11):
+            # Makes fillers for the leaderboard if there aren't enough data
             try:
                 player_id, player, score, consecutive_wins = top_players[i-1]
             except IndexError:
@@ -606,6 +630,7 @@ class Leaderboard (tk.Frame):
             self.top_players_ids.append(player_id)
             medal = self._check_medal(i)
 
+            # Check if the current player is part of the top players
             is_current = False
             try:
                 if current_player[0] == player_id and current_player[1] != "Guest":
@@ -658,11 +683,22 @@ class Leaderboard (tk.Frame):
                               sticky = "nsew")
         self.last_rank_score = score
 
-    def reload_leaderboard(self, connection, player):
+    def reload_leaderboard(self, connection: sqlite3.Connection, current_player: list):
+        """Reloads the leaderboard
+        
+        Parameters:
+        connection(sqlite3.Connection): Connection to the database
+        current_player(list): List with the current player data
+        """        
         self.leaderboard_holder.destroy()
-        self._build_leaderboard(connection, player)
+        self._build_leaderboard(connection, current_player)
 
-    def _display_player(self, player = None):
+    def _display_player(self, current_player: list = None):
+        """Displays the current player status below the leaderboard
+        
+        Parameters:
+        current_player(list): List with the current player data
+        """
         self.player_holder = tk.Frame(self)
         self.player_holder.pack(anchor = "center",
                                 pady = 5)
@@ -671,7 +707,8 @@ class Leaderboard (tk.Frame):
         self.player_holder.grid_columnconfigure(list(range(2, 4)), minsize = 100)
 
         self.on_top_players = False
-        if player == None or player[1] == "Guest":
+        # If the current player is a guest
+        if current_player == None or current_player[1] == "Guest":
             not_saved = tk.Label(self.player_holder,
                                  text = "Guests Scores are not Tracked!",
                                  font = ("Arial", 12, "bold"),
@@ -683,7 +720,7 @@ class Leaderboard (tk.Frame):
                            sticky = "nsew")
             return
         else:
-            player_id, player_nick, player_score, player_consecutive_wins = player
+            player_id, player_nick, player_score, player_consecutive_wins = current_player
             rank, medal = self._check_rank(player_id)
 
         rank = tk.Label(self.player_holder,
@@ -730,11 +767,22 @@ class Leaderboard (tk.Frame):
                    column = 3,
                    sticky = "nsew")
 
-    def reload_player(self, player):
+    def reload_player(self, current_player: list):
+        """Realoads the player display
+        
+        Parameters:
+        current_player(list): List with the current player data
+        """
         self.player_holder.destroy()
-        self._display_player(player)
+        self._display_player(current_player)
 
-    def _check_rank(self, player_id):
+    def _check_rank(self, player_id: int):
+        """Checks if the current player is in the top 10 players
+        
+        Parameters:
+        rank(int|None): Rank of the current player
+        medal(str): Hex of the player's medal
+        """
         rank = None
         for i, id in enumerate(self.top_players_ids):
             if player_id == id:
@@ -744,10 +792,19 @@ class Leaderboard (tk.Frame):
 
             elif id == None:
                 break
+        
+        medal = self._check_medal(rank)
+        return rank, medal
 
-        return rank, self._check_medal(rank)
+    def _check_medal(self, rank: int) -> str:
+        """Checks if the current player is in the top 3 players
+        
+        Parameters:
+        rank(int): Rank of the current player
 
-    def _check_medal(self, rank):
+        Returns:
+        medal(str): Hex code of the color of his medal if he has one
+        """
         if rank == 1:
             medal = "Yellow"
         elif rank == 2:

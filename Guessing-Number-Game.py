@@ -45,7 +45,9 @@ class GuessingNumberGame(tk.Tk):
         create_leaderboard(leaderboard)
 
         frames_holder = tk.Frame(self)
-        frames_holder.pack(anchor = "center")
+        frames_holder.pack(anchor = "center",
+                           fill = "both",
+                           expand = "True")
 
         self.frames = {}
         leaderboard_frame = Leaderboard(leaderboard, frames_holder, self)
@@ -60,6 +62,8 @@ class GuessingNumberGame(tk.Tk):
                         sticky = "nsew")
         self.frames[Game.__name__] = game_frame
 
+        frames_holder.columnconfigure(0, weight=1)
+        frames_holder.rowconfigure(0, weight=1)
 
         self.change_frame("Game")
         
@@ -71,22 +75,24 @@ class GuessingNumberGame(tk.Tk):
 class Game(tk.Frame):
     """Frame where you can play and guess"""
     def __init__(self, connection, master, leaderboard, window):
-        tk.Frame.__init__(self, master)
+        tk.Frame.__init__(self, master, bg = "#6e5c62")
         self.window = window
         self.connection = connection
         self.leaderboard = leaderboard 
 
-        header_holder = tk.Frame(self)
+        header_holder = tk.Frame(self,
+                                 bg = "#6e5c62")
         header_holder.pack(anchor = "center",
                            fill = "x",
                            pady = 5)
         
-        leaderboard_profile = tk.Frame(header_holder)
+        leaderboard_profile = tk.Frame(header_holder,
+                                       bg = "#6e5c62")
         leaderboard_profile.grid(row = 0,
                                  column = 0,
                                  sticky = "w")
 
-        profile_image = Image.open("assets/Profile.png")
+        profile_image = Image.open("assets/ProfileWhite.png")
         profile_image.thumbnail((30, 30))
         profile_image = ImageTk.PhotoImage(profile_image)
 
@@ -94,19 +100,21 @@ class Game(tk.Frame):
         self.score = 0
         self.consecutive_wins = 0
         profile = tk.Label(leaderboard_profile,
-                           image = profile_image)
+                           image = profile_image,
+                           bg = "#6e5c62")
         profile.image = profile_image
         profile.grid(row = 0,
                      column = 1,
                      sticky = "e")
         profile.bind("<Button-1>", lambda event: self._change_player(simpledialog.askstring("Who are you?", f"Currently playing as: {self.player[1]}\nType a different nickname to\nchange player (Limit of 7 characters):"), rows))
 
-        leaderboard_image = Image.open("assets/Leaderboard.png")
+        leaderboard_image = Image.open("assets/LeaderboardWhite.png")
         leaderboard_image.thumbnail((30, 30))
         leaderboard_image = ImageTk.PhotoImage(leaderboard_image)
 
         open_leaderboard = tk.Label(leaderboard_profile,
-                                    image = leaderboard_image)
+                                    image = leaderboard_image,
+                                    bg = "#6e5c62")
         open_leaderboard.image = leaderboard_image
         open_leaderboard.grid(row = 0,
                               column = 0,
@@ -115,7 +123,9 @@ class Game(tk.Frame):
 
         header = tk.Label(header_holder,
                           text = "Numdle",
-                          font = ("Arial", 16, "bold"))
+                          font = ("Arial", 16, "bold"),
+                          fg = "White",
+                          bg = "#6e5c62")
         header.grid(row = 0,
                     column = 1,
                     padx = 65,
@@ -123,14 +133,18 @@ class Game(tk.Frame):
         
         self.player_score = tk.Label(header_holder,
                                       text = f"Score: {self.player[2]}",
-                                      font = ("Arial", 12, "bold"))
+                                      font = ("Arial", 12, "bold"),
+                                      fg = "White",
+                                      bg = "#6e5c62")
         self.player_score.grid(row = 0,
                                 column = 2,
                                 sticky = "e")
 
         self.info = tk.Label(self,
-                             text = "Are you a good guesser?",
-                             font = ("Arial", 12))
+                             text = "",
+                             font = ("Arial", 12),
+                             fg = "White",
+                             bg = "#6e5c62")
         self.info.pack(anchor = "center")
 
         random_number = generate_number()
@@ -138,9 +152,15 @@ class Game(tk.Frame):
 
         self.guess_row = 0
         self.guess_button = tk.Button(self,
-                                 text = "Guess",
-                                 command = lambda: self._check_guess(rows, random_number))
-        self.guess_button.pack(anchor = "n")
+                                      text = "Guess",
+                                      font = ("Arial", 14, "bold"),
+                                      fg = "White",
+                                      bg = "#6e5c62",
+                                      width = 8,
+                                      height = 1,
+                                      command = lambda: self._check_guess(rows, random_number))
+        self.guess_button.pack(anchor = "n",
+                               pady = 10)
 
     def _check_guess(self, rows, random_number):
         """Checks the users guess"""
@@ -155,9 +175,11 @@ class Game(tk.Frame):
         for i, box in enumerate(rows[self.guess_row]):
             if int(box.get()) == target[i]:
                 target[i] = _found
-                box.configure(bg = "Green")
+                box.configure(bg = "#3aa394",
+                              highlightbackground = "#3aa394")
             else:
-                box.configure(bg = "Gray")
+                box.configure(bg = "#312a2c",
+                              highlightbackground = "#312a2c")
         
         if np.all(target == _found):
             self.guess_button.config(text = "Play Again",
@@ -182,9 +204,10 @@ class Game(tk.Frame):
 
         for box in rows[self.guess_row]:
             for i, number in enumerate(target):
-                if int(box.get()) == number and box["bg"] != "Green":
+                if int(box.get()) == number and box["bg"] != "#3aa394":
                     target[i] = _found
-                    box.configure(bg = "Yellow")
+                    box.configure(bg = "#d3ad69",
+                                  highlightbackground = "#d3ad69")
                     break
         
         if self.guess_row > 4:
@@ -208,24 +231,30 @@ class Game(tk.Frame):
         if next_row == True:
             for box in rows[self.guess_row]:
                 box.configure(state = "normal",
-                              bg = "White")
+                              bg = "#6e5c62",
+                              highlightbackground = "#4c4347",
+                              highlightcolor = "#4c4347")
     
-    def _clear_boxes(self, rows):
+    def _clear_boxes(self, rows, changing_player = False):
         """Clears the guess boxes and resets their colours"""
         for boxes in rows:
             for box in boxes:
                 box.configure(state = "normal",
-                              bg = "#f0f0f0")
+                              bg = "#615458")
                 box.delete(0, tk.END)
                 box.configure(disabledbackground = box["bg"],
                               state = "disable")
 
         for box in rows[0]:
             box.configure(state = "normal",
-                          bg = "White")
+                          bg = "#6e5c62")
 
         self.guess_row = 0
-        self.info.configure(text = "Are you a good guesser?")
+        if not changing_player:
+            self.info.configure(text = f"Wins in a row: {self.consecutive_wins}")
+        else:
+            self.info.configure(text = "")
+
         self.player_score.configure(text = f"Score: {self.score}")
         random_number = generate_number()
         self.guess_button.configure(text = "Guess",
@@ -240,7 +269,8 @@ class Game(tk.Frame):
         Returns:
         Boxes (Array): Array containing the boxes created
         """
-        boxes_holder = tk.Label(self)
+        boxes_holder = tk.Label(self,
+                                bg = "#6e5c62")
         boxes_holder.pack(anchor = "n")
 
         validation_command = app_window.register(self._validate_entry)
@@ -249,18 +279,21 @@ class Game(tk.Frame):
         for i in range(6):
             for j in range(5):
                 box = tk.Entry(boxes_holder,
-                               font = ("Arial", 12),
+                               font = ("Arial", 14),
                                justify = "center",
-                               fg = "Black",
-                               bg = "#f0f0f0",
-                               width = 5,
+                               fg = "White",
+                               bg = "#615458",
+                               width = 3,
+                               border = 0,
+                               highlightthickness = 4,
+                               highlightbackground = "#615458",
                                state = "disabled",
                                validate = "key",
                                validatecommand=(validation_command, '%P'))
                 box.configure(disabledforeground = box["fg"],
                               disabledbackground = box["bg"])
-                box.grid(padx = 5,
-                         pady = 10,
+                box.grid(padx = 2,
+                         pady = 3,
                          row = i+1,
                          column = j,
                          sticky = "ns")
@@ -272,7 +305,9 @@ class Game(tk.Frame):
 
         for box in rows[0]:
             box.configure(state = "normal",
-                          bg = "White")
+                          bg = "#6e5c62",
+                          highlightbackground = "#4c4347",
+                          highlightcolor = "#4c4347")
 
         return rows
     
@@ -326,7 +361,7 @@ class Game(tk.Frame):
         self.consecutive_wins = 0
 
         self.window.title(f"Numdle ({self.player[1]})")
-        self._clear_boxes(rows)
+        self._clear_boxes(rows, True)
 
         self.leaderboard.reload_leaderboard(self.player)
         self.leaderboard.reload_player(self.player)

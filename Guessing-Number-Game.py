@@ -11,15 +11,24 @@ import numpy as np
 from numpy import random as rd
 
 
-def generate_number():
-    """Generates a array with 5 random numbers from 0 to 9"""
+def generate_number() -> np.ndarray:
+    """Generates a array with 5 random numbers from 0 to 9
+    
+    Returns:
+    random_number(np.ndarray): An array with 5 digits, each ranging from 0 to 9
+    """
     random_number = np.array(rd.randint(1, 10, 1))
     random_number = np.append(random_number, rd.randint(0, 10, 4))
     # print(random_number)  # Used for testing ONLY
     return random_number
 
 
-def create_leaderboard(connection):
+def create_leaderboard(connection: sqlite3.Connection):
+    """Creates the table of the leaderboard if it doesn't exist
+    
+    Parameters:
+    connection(sqlite3.Connection): Connection to the database
+    """
     cursor = connection.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS leaderboard (
                    id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,19 +78,21 @@ class GuessingNumberGame(tk.Tk):
 
         self.mainloop()
         
-    def change_frame(self, selected_frame):
+    def change_frame(self, selected_frame: tk.Frame):
+        """Changes to the next selected frame
+        
+        Parameters:
+        selected_frame(tk.Frame): Frame that will be raised
+        """
         next_frame = self.frames[selected_frame]
         next_frame.tkraise()
         
 
 class Game(tk.Frame):
-    """Frame where you can play and guess"""
-    def __init__(self, connection, master, leaderboard, window):
+    """Frame where you can play the game"""
+    def __init__(self, connection: sqlite3.Connection, master: tk.Frame, leaderboard: tk.Frame, window: tk.Tk):
         tk.Frame.__init__(self, master, bg = "#6e5c62")
-        window.protocol("WM_DELETE_WINDOW", self._on_closing)
-        self.window = window
-        self.connection = connection
-        self.leaderboard = leaderboard 
+        window.protocol("WM_DELETE_WINDOW", lambda: self._on_closing(leaderboard, connection, window))
 
         header_holder = tk.Frame(self,
                                  bg = "#6e5c62")
@@ -101,7 +112,7 @@ class Game(tk.Frame):
 
         self.player = [None, "Guest", 0, 0]
         self.score = 0
-        self.consecutive_wins = 0
+        self.win_streak = 0
         profile = tk.Label(leaderboard_profile,
                            image = profile_image,
                            bg = "#6e5c62")
@@ -109,7 +120,7 @@ class Game(tk.Frame):
         profile.grid(row = 0,
                      column = 1,
                      sticky = "e")
-        profile.bind("<Button-1>", lambda event: self._change_player(simpledialog.askstring("Who are you?", f"Currently playing as: {self.player[1]}\nType a different nickname to\nchange player (Limit of 7 characters):"), rows))
+        profile.bind("<Button-1>", lambda event: self._change_player(rows, leaderboard, connection, window))
 
         leaderboard_image = Image.open("assets/LeaderboardWhite.png")
         leaderboard_image.thumbnail((30, 30))
@@ -122,7 +133,7 @@ class Game(tk.Frame):
         open_leaderboard.grid(row = 0,
                               column = 0,
                               sticky = "w")
-        open_leaderboard.bind("<Button-1>", lambda event: self.window.change_frame("Leaderboard"))
+        open_leaderboard.bind("<Button-1>", lambda event: window.change_frame("Leaderboard"))
 
         header = tk.Label(header_holder,
                           text = "Numdle",
@@ -161,12 +172,19 @@ class Game(tk.Frame):
                                       bg = "#6e5c62",
                                       width = 8,
                                       height = 1,
-                                      command = lambda: self._check_guess(rows, random_number))
+                                      command = lambda: self._check_guess(rows, random_number, leaderboard, connection))
         self.guess_button.pack(anchor = "n",
                                pady = 10)
 
-    def _check_guess(self, rows, random_number):
-        """Checks the users guess"""
+    def _check_guess(self, rows: list, random_number: np.ndarray, leaderboard: tk.Frame, connection: sqlite3.Connection):
+        """Checks the player guess
+        
+        Parameters:
+        rows(list): List of rows with the boxes from the player guess
+        random_number(np.ndarray): Array representing the random number generated
+        leaderboard(tk.Frame): Frame holding the leaderboard
+        connection(sqlite3.Connection): Connection to the database
+        """
         for box in rows[self.guess_row]:
             if box.get() == "":
                 messagebox.showwarning(title = "Fill the Boxes",
@@ -184,11 +202,12 @@ class Game(tk.Frame):
                 box.configure(bg = "#312a2c",
                               highlightbackground = "#312a2c")
         
+        # If every number is correct
         if np.all(target == _found):
             self.guess_button.config(text = "Play Again",
-                                     command = lambda: self._clear_boxes(rows))
+                                     command = lambda: self._clear_ui(rows, leaderboard, connection))
             self.info.configure(text = "Nice, you got it!")
-            self.consecutive_wins += 1
+            self.win_streak += 1
 
             if self.guess_row == 0:
                 self.score += 5
@@ -213,19 +232,27 @@ class Game(tk.Frame):
                                   highlightbackground = "#d3ad69")
                     break
         
+        # If the player used it's last guess
         if self.guess_row > 4:
             self.guess_button.config(text = "Try Again",
-                                     command = lambda: self._clear_boxes(rows))
+                                     command = lambda: self._clear_ui(rows, leaderboard, connection))
             self.info.configure(text = f"The number was {''.join(map(str, random_number))}")
-            self._update_status()
+
+            self._update_status(leaderboard, connection)
             self._update_boxes(rows, False)
-            self.consecutive_wins = 0
+
+            self.win_streak = 0
             self.score = 0
         else:
             self._update_boxes(rows)
 
-    def _update_boxes(self, rows, next_row = True):
-        """Disables the boxes in the guess row and unlocks the boxes in the next if the number wasn't guessed"""
+    def _update_boxes(self, rows: list, next_row: None = True):
+        """Disables the boxes in the guess row and unlocks the boxes in the next if the number wasn't guessed
+        
+        Parameters:
+        rows(list): List of rows with the boxes from the player guess
+        next_row(bool): Tells the function if the next row should or not be unlocked
+        """
         for box in rows[self.guess_row]:
             box.configure(disabledbackground = box["bg"],
                           state = "disable")
@@ -238,8 +265,15 @@ class Game(tk.Frame):
                               highlightbackground = "#4c4347",
                               highlightcolor = "#4c4347")
     
-    def _clear_boxes(self, rows, changing_player = False):
-        """Clears the guess boxes and resets their colours"""
+    def _clear_ui(self, rows: list, leaderboard: tk.Frame, connection: sqlite3.Connection, changing_player = False):
+        """Clears the UI from the game frame
+        
+        Parameters:
+        rows(list): List of rows with the boxes from the player guess
+        leaderboard(tk.Frame): Frame holding the leaderboard
+        connection(sqlite3.Connection): Connection to the database
+        changing_player(bool): Tells the function if the player is being changed
+        """
         for boxes in rows:
             for box in boxes:
                 box.configure(state = "normal",
@@ -256,24 +290,24 @@ class Game(tk.Frame):
                           highlightcolor = "#4c4347")
 
         self.guess_row = 0
-        if not changing_player and self.consecutive_wins >= 1:
-            self.info.configure(text = f"Win Streak: {self.consecutive_wins}")
+        if not changing_player and self.win_streak >= 1:
+            self.info.configure(text = f"Win Streak: {self.win_streak}")
         else:
             self.info.configure(text = "")
-
         self.player_score.configure(text = f"Score: {self.score}")
+
         random_number = generate_number()
         self.guess_button.configure(text = "Guess",
-                                    command = lambda: self._check_guess(rows, random_number))
+                                    command = lambda: self._check_guess(rows, random_number, leaderboard, connection))
 
-    def _create_boxes(self, app_window):
+    def _create_boxes(self, app_window: tk.Tk) -> list:
         """Creates the boxes for the user to guess the number
         
         Parameters:
-        app_window (tk.Tk): Window holding the frame
+        app_window(tk.Tk): Window holding the frame
 
         Returns:
-        Boxes (Array): Array containing the boxes created
+        rows(list): List containing the boxes created
         """
         boxes_holder = tk.Label(self,
                                 bg = "#6e5c62")
@@ -317,11 +351,16 @@ class Game(tk.Frame):
 
         return rows
     
-    def _focus_next_box(self, event):
+    def _focus_next_box(self, event: tk.Event):
+        """Focus on the next entry
+        
+        Parameters:
+        event(tk.Event): Event that called the function
+        """
         if event.char.isdigit():
             event.widget.tk_focusNext().focus()
 
-    def _validate_entry(self, entry_text):
+    def _validate_entry(self, entry_text: str) -> bool:
         """Validates that each box can only have 1 digit
         
         Parameters:
@@ -339,58 +378,89 @@ class Game(tk.Frame):
         
         return False
 
-    def _change_player(self, player, rows):
+    def _change_player(self, rows: list, leaderboard: tk.Frame, connection: sqlite3.Connection, window: tk.Tk):
+        """Changes the current player
+        
+        Parameters:
+        rows(list): List of rows with the boxes from the player guess
+        leaderboard(tk.Frame): Frame holding the leaderboard
+        connection(sqlite3.Connection): Connection to the database
+        window(tk.Tk): Window of the game
+        """
+        player = simpledialog.askstring("Who are you?", f"Currently playing as: {self.player[1]}\nType a different nickname to\nchange player (Limit of 7 characters):")
+        # If the user didn't type a player
         if player == None or player == "":
             return
         
+        # If the user typed a player nick that is too long
         if len(player) > 7:
             messagebox.showerror("Too Big!", "The nickname you tried is too big!")
             return
         
-        self._update_status(True)
+        self._update_status(leaderboard, connection, True)
+        # Turns the player into a guest
         if player == "Guest" or player == "guest":
             self.player = [None, "Guest", 0, 0]
+        # Gets the player from the database
         else:
-            cursor = self.connection.cursor()
+            cursor = connection.cursor()
             cursor.execute("""SELECT * FROM leaderboard WHERE player = ?""", (player,))
             result = cursor.fetchone()
-
+            
+            # Creates the player if he doesn't exist yet
             if result == None:
-                self._create_player(player)
+                self._create_player(player, connection)
                 cursor.execute("""SELECT * FROM leaderboard WHERE player = ?""", (player,))
                 result = cursor.fetchone()
             
             cursor.close()
             self.player = list(result)
 
+        # Resets the score and win streak
         self.score = 0
-        self.consecutive_wins = 0
+        self.win_streak = 0
 
-        self.window.title(f"Numdle ({self.player[1]})")
-        self._clear_boxes(rows, True)
+        # Updates the UI
+        window.title(f"Numdle ({self.player[1]})")
+        self._clear_ui(rows, leaderboard, connection, True)
 
-        self.leaderboard.reload_leaderboard(self.player)
-        self.leaderboard.reload_player(self.player)
+        # Reloads the leaderboard
+        leaderboard.reload_leaderboard(connection, self.player)
+        leaderboard.reload_player(self.player)
 
-    def _create_player(self, player):
-        cursor = self.connection.cursor()
+    def _create_player(self, player: str, connection: sqlite3.Connection):
+        """Creates a player on the database
+        
+        Parameters:
+        player(str): Nickname of the player that will be created
+        connection(connection: sqlite3.Connection): Connection to the database
+        """
+        cursor = connection.cursor()
 
         cursor.execute("INSERT INTO leaderboard (player, score, consecutive_wins) VALUES (?, ?, ?)", (player, 0, 0))
-        self.connection.commit()
+        connection.commit()
 
         cursor.close()
 
-    def _update_status(self, changing_player = False):
+    def _update_status(self, leaderboard: tk.Frame, connection: sqlite3.Connection, changing_player = False):
+        """Updates the current player status
+        
+        Parameters:
+        leaderboard(tk.Frame): Frame holding the leaderboard
+        connection(sqlite3.Connection): Connection to the database
+        changing_player(bool): Tells the function if the player is being changed
+        """
+        # If the current player is a guest
         if self.player[1] == "Guest" or self.player[1] == "guest":
             return
 
-        cursor = self.connection.cursor()
+        cursor = connection.cursor()
 
-        update = False
-        if self.player[2] < self.score and self.player[3] < self.consecutive_wins:
-            cursor.execute("""UPDATE leaderboard SET score = ?, consecutive_wins = ?  WHERE id = ?""", (self.score, self.consecutive_wins, self.player[0]))
+        update = False  # For keeping track if the player got a new record
+        if self.player[2] < self.score and self.player[3] < self.win_streak:
+            cursor.execute("""UPDATE leaderboard SET score = ?, consecutive_wins = ?  WHERE id = ?""", (self.score, self.win_streak, self.player[0]))
             self.player[2] = self.score
-            self.player[3] = self.consecutive_wins
+            self.player[3] = self.win_streak
             update = True
 
         elif self.player[2] < self.score:
@@ -398,32 +468,39 @@ class Game(tk.Frame):
             self.player[2] = self.score
             update = True
 
-        elif self.player[3] < self.consecutive_wins:
-            cursor.execute("""UPDATE leaderboard SET consecutive_wins = ?  WHERE id = ?""", (self.consecutive_wins, self.player[0]))
-            self.player[3] = self.consecutive_wins
+        elif self.player[3] < self.win_streak:
+            cursor.execute("""UPDATE leaderboard SET consecutive_wins = ?  WHERE id = ?""", (self.win_streak, self.player[0]))
+            self.player[3] = self.win_streak
             update = True
 
-        self.connection.commit()
+        connection.commit()
         cursor.close()
 
         if not changing_player:
-            if (self.leaderboard.on_top_players and update) or (self.leaderboard.last_rank_score <= self.score):
-                self.leaderboard.reload_leaderboard(self.player)
+            # Updates the leaderboard if the player got a rank
+            if (leaderboard.on_top_players and update) or (leaderboard.last_rank_score <= self.score):
+                leaderboard.reload_leaderboard(connection, self.player)
                 was_updated = True
 
             if update or was_updated:
-                self.leaderboard.reload_player(self.player)
+                leaderboard.reload_player(self.player)
 
-    def _on_closing(self):
-        self._update_status()
-        self.window.destroy()
+    def _on_closing(self, leaderboard: tk.Frame, connection: sqlite3.Connection, window: tk.Tk):
+        """Updates the current player status before closing the app
+        
+        Parameters:
+        leaderboard(tk.Frame): Frame holding the leaderboard
+        connection(sqlite3.Connection): Connection to the database
+        window(tk.Tk): Window of the game
+        """
+        self._update_status(leaderboard, connection)
+        window.destroy()
 
 
 class Leaderboard (tk.Frame):
     """Frame for displaying the top 10 best plays and a player best score"""
     def __init__(self, connection, master, window):
         tk.Frame.__init__(self, master, bg = "#6e5c62")
-        self.connection = connection
 
         header_holder= tk.Frame(self,
                                 bg = "#6e5c62")
@@ -450,10 +527,10 @@ class Leaderboard (tk.Frame):
         header.pack(side = "left",
                     padx = 70)
 
-        self._build_leaderboard()
+        self._build_leaderboard(connection)
         self._display_player()
 
-    def _build_leaderboard(self, current_player = None):
+    def _build_leaderboard(self, connection, current_player = None):
         self.leaderboard_holder = tk.Frame(self,
                                            bg = "#6e5c62")
         self.leaderboard_holder.pack(anchor = "center",
@@ -508,11 +585,11 @@ class Leaderboard (tk.Frame):
                           column = 3,
                           sticky = "nsew")
         
-        top_players = self._get_top_ten()
+        top_players = self._get_top_ten(connection)
         self._populate_leaderboard(self.leaderboard_holder, top_players, current_player)
         
-    def _get_top_ten(self):
-        cursor = self.connection.cursor()
+    def _get_top_ten(self, connection):
+        cursor = connection.cursor()
         cursor.execute("""SELECT * FROM Leaderboard ORDER BY score DESC LIMIT 10""")
         results = cursor.fetchall()
         cursor.close()
@@ -581,9 +658,9 @@ class Leaderboard (tk.Frame):
                               sticky = "nsew")
         self.last_rank_score = score
 
-    def reload_leaderboard(self, player):
+    def reload_leaderboard(self, connection, player):
         self.leaderboard_holder.destroy()
-        self._build_leaderboard(player)
+        self._build_leaderboard(connection, player)
 
     def _display_player(self, player = None):
         self.player_holder = tk.Frame(self)

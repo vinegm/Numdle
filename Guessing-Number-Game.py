@@ -98,7 +98,7 @@ class Game(tk.Frame):
         profile.grid(row = 0,
                      column = 1,
                      sticky = "e")
-        profile.bind("<Button-1>", lambda event: self._change_player(simpledialog.askstring("Who are you?", f"Currently playing as: {self.player[1]}\nType a different nickname to change player:"), rows))
+        profile.bind("<Button-1>", lambda event: self._change_player(simpledialog.askstring("Who are you?", f"Currently playing as: {self.player[1]}\nType a different nickname to\nchange player (Limit of 7 characters):"), rows))
 
         leaderboard_image = Image.open("assets/Leaderboard.png")
         leaderboard_image.thumbnail((30, 30))
@@ -190,8 +190,7 @@ class Game(tk.Frame):
             self.guess_button.config(text = "Try Again",
                                      command = lambda: self._clear_boxes(rows))
             self.info.configure(text = f"The number was {''.join(map(str, random_number))}")
-            if self.player[1] != "Guest" and self.player[1] != "guest":
-                self._update_status()
+            self._update_status()
             self._update_boxes(rows, False)
             self.consecutive_wins = 0
             self.score = 0
@@ -302,28 +301,33 @@ class Game(tk.Frame):
         if player == None or player == "":
             return
         
+        if len(player) > 7:
+            messagebox.showerror("Too Big!", "The nickname you tried is too big!")
+            return
+        
         self._update_status()
-        cursor = self.connection.cursor()
-        cursor.execute("""SELECT * FROM leaderboard WHERE player = ?""", (player,))
-        result = cursor.fetchone()
-
-        if result == None:
-            self._create_player(player)
+        if player == "Guest" or player == "guest":
+            self.player = [None, "Guest", 0, 0]
+        else:
+            cursor = self.connection.cursor()
             cursor.execute("""SELECT * FROM leaderboard WHERE player = ?""", (player,))
             result = cursor.fetchone()
-        
-        cursor.close()
-        self.player = list(result)
 
-        self.window.title(f"Numdle ({self.player[1]})")
-        self.player_score.configure(text = "Score: 0")
-        self.info.configure(text = "")
-        self._clear_boxes(rows)
+            if result == None:
+                self._create_player(player)
+                cursor.execute("""SELECT * FROM leaderboard WHERE player = ?""", (player,))
+                result = cursor.fetchone()
+            
+            cursor.close()
+            self.player = list(result)
 
         self.score = 0
         self.consecutive_wins = 0
 
-        self.leaderboard._reload_player(self.player)
+        self.window.title(f"Numdle ({self.player[1]})")
+        self._clear_boxes(rows)
+
+        self.leaderboard.reload_player(self.player)
 
     def _create_player(self, player):
         cursor = self.connection.cursor()
@@ -334,6 +338,9 @@ class Game(tk.Frame):
         cursor.close()
 
     def _update_status(self):
+        if self.player[1] == "Guest" or self.player[1] == "guest":
+            return
+        
         cursor = self.connection.cursor()
 
         update = False
@@ -350,13 +357,13 @@ class Game(tk.Frame):
             update = True
 
         self.connection.commit()
-        if update:
-            self.leaderboard._reload_player(self.player)
-
-        if self.leaderboard.on_top_players and update:
-            self.leaderboard._reload_leaderboard()
-
         cursor.close()
+
+        if (self.leaderboard.on_top_players and update) or (self.leaderboard.last_rank_score <= self.score):
+            self.leaderboard.reload_leaderboard()
+
+        if update:
+            self.leaderboard.reload_player(self.player)
 
 
 class Leaderboard (tk.Frame):
@@ -448,10 +455,10 @@ class Leaderboard (tk.Frame):
         self.top_players_ids = []
         for i in range(1, 11):
             try:
-                id, player, score, consecutive_wins = players[i-1]
+                player_id, player, score, consecutive_wins = players[i-1]
             except IndexError:
-                id, player, score, consecutive_wins = False, "None", 0, 0
-            self.top_players_ids.append(id)
+                player_id, player, score, consecutive_wins = False, "None", 0, 0
+            self.top_players_ids.append(player_id)
             medal = self._check_medal(i)
 
             rank_column = tk.Label(master,
@@ -492,8 +499,9 @@ class Leaderboard (tk.Frame):
             score_column.grid(row = i,
                               column = 3,
                               sticky = "nsew")
+        self.last_rank_score = score
 
-    def _reload_leaderboard(self):
+    def reload_leaderboard(self):
         self.leaderboard_holder.destroy()
         self._build_leaderboard()
 
@@ -503,9 +511,10 @@ class Leaderboard (tk.Frame):
                               pady = 10)
         self.player_info.grid_columnconfigure(0, minsize = 50)
         self.player_info.grid_columnconfigure(list(range(1, 4)), minsize = 100)
+        self.player_info.grid_columnconfigure(2, minsize = 113)
 
         self.on_top_players = False
-        if player == None:
+        if player == None or player[1] == "Guest" or player[1] == "guest":
             not_saved = tk.Label(self.player_info,
                                  text = "Guests Scores are not Tracked!",
                                  font = ("Arial", 12, "bold"),
@@ -558,7 +567,7 @@ class Leaderboard (tk.Frame):
                    column = 3,
                    sticky = "nsew")
 
-    def _reload_player(self, player):
+    def reload_player(self, player):
         self.player_info.destroy()
         self._display_player(player)
 
@@ -585,6 +594,7 @@ class Leaderboard (tk.Frame):
         else:
             medal = "Black"
         return medal
+
 
 if __name__ == "__main__":
     app = GuessingNumberGame()

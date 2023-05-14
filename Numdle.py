@@ -168,6 +168,7 @@ class Game(tk.Frame):
         self.guess_button = tk.Button(self,
                                       text = "Guess",
                                       font = ("Arial", 14, "bold"),
+                                      takefocus = False,
                                       fg = "White",
                                       bg = "#6e5c62",
                                       width = 8,
@@ -342,6 +343,7 @@ class Game(tk.Frame):
         for boxes in rows:
             for box in boxes:
                 box.bind("<KeyPress>", self._focus_next_box)
+                box.bind("<BackSpace>", self._focus_previous)
 
         for box in rows[0]:
             box.configure(state = "normal",
@@ -359,6 +361,14 @@ class Game(tk.Frame):
         """
         if event.char.isdigit():
             event.widget.tk_focusNext().focus()
+
+    def _focus_previous(self, event: tk.Event):
+        """Focus on the previous entry
+        
+        Parameters:
+        event(tk.Event): Event that called the function
+        """
+        event.widget.tk_focusPrev().focus()
 
     def _validate_entry(self, entry_text: str) -> bool:
         """Validates that each box can only have 1 digit

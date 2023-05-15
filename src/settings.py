@@ -11,7 +11,10 @@ HIGHLIGHTCOLOR_GUESS_ROW = HIGHLIGHTBG_GUESS_ROW
 
 # Colors of the disabled boxes
 BG_DISABLED = "#615458"
-HIGHLIGHTBG_DISABLED = "#615458"
+HIGHLIGHTBG_DISABLED = BG_DISABLED
+
+# Color of the guess button
+GUESS_BUTTON = "#6e5c62"
 
 # Colors of a corret guess box
 BG_CORRECT = "#3aa394"
@@ -35,4 +38,3 @@ BG_LEADERBOARD_EVEN = "#6e5c62"
 MEDAL_FIRST = "Yellow"
 MEDAL_SECOND = "#C0C0C0"
 MEDAL_THIRD = "#cd7f32"
-

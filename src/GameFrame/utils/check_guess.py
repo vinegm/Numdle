@@ -6,26 +6,26 @@ from src.DatabaseHandler import *
 from src.GameFrame.utils.boxes_handler import *
 
 
-def check_guess(self, rows: list, random_number: np.ndarray, leaderboard: tk.Frame, connection: sqlite3.Connection, window: tk.Tk):
+def check_guess(self, rows: list, leaderboard: tk.Frame, connection: sqlite3.Connection, window: tk.Tk):
     """Checks the player guess
     
     Parameters:
     rows(list): List of rows with the boxes from the player guess
-    random_number(np.ndarray): Array representing the random number generated
     leaderboard(tk.Frame): Frame holding the leaderboard
     connection(sqlite3.Connection): Connection to the database
+    window(tk.Tk): Window of the app
     """
     for box in rows[self.guess_row]:
         if box.get() == "":
             messagebox.showwarning(title = "Fill the Boxes",
                                     message = "You have to fill all the\nboxes to make a guess!")
             return
-    _found = -1
+    _FOUND = -1
 
-    target = np.copy(random_number)
+    target = np.copy(self.random_number)
     for i, box in enumerate(rows[self.guess_row]):
         if int(box.get()) == target[i]:
-            target[i] = _found
+            target[i] = _FOUND
             box.configure(bg = BG_CORRECT,
                           highlightbackground = HIGHLIGHTBG_CORRECT)
         else:
@@ -33,7 +33,7 @@ def check_guess(self, rows: list, random_number: np.ndarray, leaderboard: tk.Fra
                           highlightbackground = HIGHLIGHTBG_MISS)
     
     # If every number is correct
-    if np.all(target == _found):
+    if np.all(target == _FOUND):
         self.guess_button.config(text = "Play Again",
                                     command = lambda: self._clear_ui(rows, leaderboard, connection, window))
         self.return_function = "clear"
@@ -60,7 +60,7 @@ def check_guess(self, rows: list, random_number: np.ndarray, leaderboard: tk.Fra
     for box in rows[self.guess_row]:
         for i, number in enumerate(target):
             if int(box.get()) == number and box["bg"] != BG_CORRECT:
-                target[i] = _found
+                target[i] = _FOUND
                 box.configure(bg = BG_CLOSE,
                               highlightbackground = HIGHLIGHTBG_CLOSE)
                 break
@@ -70,7 +70,7 @@ def check_guess(self, rows: list, random_number: np.ndarray, leaderboard: tk.Fra
         self.guess_button.config(text = "Try Again",
                                     command = lambda: self._clear_ui(rows, leaderboard, connection, window))
         self.return_function = "clear"
-        self.info.configure(text = f"The number was {''.join(map(str, random_number))}")
+        self.info.configure(text = f"The number was {''.join(map(str, self.random_number))}")
 
         update_status(self, leaderboard, connection)
         update_boxes(self, rows, False)
@@ -79,3 +79,4 @@ def check_guess(self, rows: list, random_number: np.ndarray, leaderboard: tk.Fra
         self.score = 0
     else:
         update_boxes(self, rows)
+        rows[self.guess_row][0].focus()

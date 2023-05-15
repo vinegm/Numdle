@@ -1,5 +1,4 @@
 import tkinter as tk
-import sqlite3
 from src.GameFrame import *
 from src.LeaderboardFrame import *
 from src.DatabaseHandler import *

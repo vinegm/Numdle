@@ -20,15 +20,16 @@ class LeaderboardFrame(tk.Frame):
         back_image.thumbnail((30, 30))
         back_image = ImageTk.PhotoImage(back_image)
 
-        back = tk.Label(header_holder,
+        back = tk.Button(header_holder,
                         image = back_image,
-                        bg = BG_APP)
+                        bg = BG_APP,
+                        command = lambda: window.change_frame("GameFrame"))
+        back.configure(relief = tk.FLAT)
         back.image = back_image
         back.pack(side = "left")
-        back.bind("<Button-1>", lambda event: window.change_frame("GameFrame"))
 
         header = tk.Label(header_holder,
-                          text = "LeaderboardFrame",
+                          text = "Leaderboard",
                           font = ("Arial", 16, "bold"),
                           fg = FG,
                           bg = BG_APP)

@@ -68,7 +68,8 @@ def build_leaderboard(test, connection: sqlite3.Connection, current_player: list
     
     top_players = get_top_ten(test, connection)
     populate_leaderboard(test, test.leaderboard_holder, top_players, current_player)
-    
+
+ 
 def populate_leaderboard(self, master: tk.Frame, top_players: list, current_player: list):
     """Populate the leaderboard with the top 10 players
     

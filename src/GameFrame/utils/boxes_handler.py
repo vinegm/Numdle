@@ -41,10 +41,10 @@ def create_boxes(self, app_window: tk.Tk) -> list:
                         sticky = "ns")
             rows[i].append(box)
 
-    for boxes in rows:
-        for box in boxes:
-            box.bind("<KeyPress>", self._focus_next_box)
-            box.bind("<BackSpace>", self._focus_previous)
+    for i, boxes in enumerate(rows):
+        for j, box in enumerate(boxes):
+            box.bind("<KeyPress>", lambda event, row=i, column=j: self._focus_handler(event, rows, row, column))
+            box.bind("<BackSpace>", lambda event, row=i, column=j: self._focus_handler(event, rows, row, column))
 
     for box in rows[0]:
         box.configure(state = "normal",

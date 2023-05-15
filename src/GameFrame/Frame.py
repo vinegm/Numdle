@@ -32,27 +32,29 @@ class GameFrame(tk.Frame):
         self.player = [None, "Guest", 0, 0]
         self.score = 0
         self.win_streak = 0
-        profile = tk.Label(leaderboard_profile,
+        profile = tk.Button(leaderboard_profile,
                            image = profile_image,
-                           bg = BG_APP)
+                           bg = BG_APP,
+                           command = lambda: change_player(self, rows, leaderboard, connection, window))
+        profile.configure(relief = tk.FLAT)
         profile.image = profile_image
         profile.grid(row = 0,
                      column = 1,
                      sticky = "e")
-        profile.bind("<Button-1>", lambda event: change_player(self, rows, leaderboard, connection, window))
 
         leaderboard_image = Image.open("assets/LeaderboardWhite.png")
         leaderboard_image.thumbnail((30, 30))
         leaderboard_image = ImageTk.PhotoImage(leaderboard_image)
 
-        open_leaderboard = tk.Label(leaderboard_profile,
-                                    image = leaderboard_image,
-                                    bg = BG_APP)
+        open_leaderboard = tk.Button(leaderboard_profile,
+                                     image = leaderboard_image,
+                                     bg = BG_APP,
+                                     command = lambda: window.change_frame("LeaderboardFrame"))
+        open_leaderboard.configure(relief = tk.FLAT)
         open_leaderboard.image = leaderboard_image
         open_leaderboard.grid(row = 0,
                               column = 0,
                               sticky = "w")
-        open_leaderboard.bind("<Button-1>", lambda event: window.change_frame("LeaderboardFrame"))
 
         header = tk.Label(header_holder,
                           text = "Numdle",
@@ -80,27 +82,35 @@ class GameFrame(tk.Frame):
                              bg = BG_APP)
         self.info.pack(anchor = "center")
 
-        random_number = generate_number()
+        self.random_number = generate_number()
         rows = create_boxes(self, master)
 
         self.guess_row = 0
         self.guess_button = tk.Button(self,
                                       text = "Guess",
                                       font = ("Arial", 14, "bold"),
-                                      takefocus = False,
                                       fg = "White",
-                                      bg = BG_APP,
+                                      bg = GUESS_BUTTON,
                                       width = 8,
                                       height = 1,
-                                      command = lambda: check_guess(self, rows, random_number, leaderboard, connection, window))
+                                      command = lambda: check_guess(self, rows, leaderboard, connection, window))
         self.guess_button.pack(anchor = "n",
                                pady = 10)
         self.return_function = "guess"
-        window.bind("<Return>", lambda event: self._return_bind(rows, random_number, leaderboard, connection, window))
+        window.bind("<Return>", lambda event: self._return_bind(rows, leaderboard, connection, window))
     
-    def _return_bind(self, rows: list, random_number: np.ndarray, leaderboard: tk.Frame, connection: sqlite3.Connection, window: tk.Tk):
+    def _return_bind(self, rows: list, leaderboard: tk.Frame, connection: sqlite3.Connection, window: tk.Tk):
+        """Checks which function the key press should call
+        
+        Parameters:
+        rows(list): List of rows with the boxes from the player guess
+        leaderboard(tk.Frame): Frame holding the leaderboard
+        connection(sqlite3.Connection): Connection to the database
+        window(tk.Tk): Window of the app
+        """
         if self.return_function == "guess":
-            check_guess(self, rows, random_number, leaderboard, connection, window)
+            check_guess(self, rows, leaderboard, connection, window)
+
         elif self.return_function == "clear":
             self._clear_ui(rows, leaderboard, connection, window)
 
@@ -135,28 +145,50 @@ class GameFrame(tk.Frame):
             self.info.configure(text = "")
         self.player_score.configure(text = f"Score: {self.score}")
 
+        rows[0][0].focus()
         self.return_function = "guess"
-        random_number = generate_number()
+        self.random_number = generate_number()
         self.guess_button.configure(text = "Guess",
-                                    command = lambda: check_guess(self, rows, random_number, leaderboard, connection, window))
+                                    command = lambda: check_guess(self, rows, leaderboard, connection, window))
 
-    def _focus_next_box(self, event: tk.Event):
-        """Focus on the next entry
+    def _focus_handler(self, event: tk.Event, rows: list, box_row: int, box_column: int):
+        """Handles the focus between the boxes
         
         Parameters:
-        event(tk.Event): Event that called the function
+        event(tk.Event): Key press that called the function
+        rows(list): List of boxes
+        box_row(int): Row the box that called the function is in
+        box_column(int): Column the box that called the function is in
         """
         if event.char.isdigit():
-            event.widget.tk_focusNext().focus()
-
-    def _focus_previous(self, event: tk.Event):
-        """Focus on the previous entry
+            try:
+                rows[box_row][box_column+1].focus()
+            except IndexError:
+                pass
+            return
         
-        Parameters:
-        event(tk.Event): Event that called the function
-        """
-        event.widget.tk_focusPrev().focus()
+        elif event.keysym == "BackSpace":
+            if box_column < 1:
+                return
+            
+            if len(rows[box_row][box_column].get()) < 1:
+                rows[box_row][box_column-1].delete(0, tk.END)
+                rows[box_row][box_column-1].focus()
+                return
+    
+        elif rows[box_row][box_column].index("insert") == 0 and event.keysym == "Left":
+            if box_column < 1:
+                return
 
+            rows[box_row][box_column-1].focus()
+        
+        elif rows[box_row][box_column].index("insert") == len(rows[box_row][box_column].get()) and event.keysym == "Right":
+            try:
+                rows[box_row][box_column+1].focus()
+            except IndexError:
+                pass
+            return
+            
     def _validate_entry(self, entry_text: str) -> bool:
         """Validates that each box can only have 1 digit
         

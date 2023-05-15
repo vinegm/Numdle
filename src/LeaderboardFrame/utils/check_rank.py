@@ -21,6 +21,7 @@ def check_rank(self, player_id: int):
     medal = check_medal(rank)
     return rank, medal
 
+
 def check_medal(rank: int) -> str:
     """Checks if the current player is in the top 3 players
     

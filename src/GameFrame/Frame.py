@@ -1,8 +1,8 @@
 import tkinter as tk
-from tkinter import messagebox
 from PIL import Image, ImageTk
 import numpy as np
 import sqlite3
+from src.settings import *
 from src.DatabaseHandler import *
 from src.GameFrame.utils import *
 
@@ -10,17 +10,17 @@ from src.GameFrame.utils import *
 class GameFrame(tk.Frame):
     """Frame where you can play the game"""
     def __init__(self, connection: sqlite3.Connection, master: tk.Frame, leaderboard: tk.Frame, window: tk.Tk):
-        tk.Frame.__init__(self, master, bg = "#6e5c62")
+        tk.Frame.__init__(self, master, bg = BG_APP)
         window.protocol("WM_DELETE_WINDOW", lambda: self._on_closing(leaderboard, connection, window))
 
         header_holder = tk.Frame(self,
-                                 bg = "#6e5c62")
+                                 bg = BG_APP)
         header_holder.pack(anchor = "center",
                            fill = "x",
                            pady = 5)
         
         leaderboard_profile = tk.Frame(header_holder,
-                                       bg = "#6e5c62")
+                                       bg = BG_APP)
         leaderboard_profile.grid(row = 0,
                                  column = 0,
                                  sticky = "w")
@@ -34,7 +34,7 @@ class GameFrame(tk.Frame):
         self.win_streak = 0
         profile = tk.Label(leaderboard_profile,
                            image = profile_image,
-                           bg = "#6e5c62")
+                           bg = BG_APP)
         profile.image = profile_image
         profile.grid(row = 0,
                      column = 1,
@@ -47,18 +47,18 @@ class GameFrame(tk.Frame):
 
         open_leaderboard = tk.Label(leaderboard_profile,
                                     image = leaderboard_image,
-                                    bg = "#6e5c62")
+                                    bg = BG_APP)
         open_leaderboard.image = leaderboard_image
         open_leaderboard.grid(row = 0,
                               column = 0,
                               sticky = "w")
-        open_leaderboard.bind("<Button-1>", lambda event: (window.change_frame("LeaderboardFrame"), window.unbind("<Return>")))
+        open_leaderboard.bind("<Button-1>", lambda event: window.change_frame("LeaderboardFrame"))
 
         header = tk.Label(header_holder,
                           text = "Numdle",
                           font = ("Arial", 16, "bold"),
                           fg = "White",
-                          bg = "#6e5c62")
+                          bg = BG_APP)
         header.grid(row = 0,
                     column = 1,
                     padx = 65,
@@ -68,7 +68,7 @@ class GameFrame(tk.Frame):
                                       text = f"Score: {self.player[2]}",
                                       font = ("Arial", 12, "bold"),
                                       fg = "White",
-                                      bg = "#6e5c62")
+                                      bg = BG_APP)
         self.player_score.grid(row = 0,
                                 column = 2,
                                 sticky = "e")
@@ -77,7 +77,7 @@ class GameFrame(tk.Frame):
                              text = "",
                              font = ("Arial", 12),
                              fg = "White",
-                             bg = "#6e5c62")
+                             bg = BG_APP)
         self.info.pack(anchor = "center")
 
         random_number = generate_number()
@@ -89,14 +89,21 @@ class GameFrame(tk.Frame):
                                       font = ("Arial", 14, "bold"),
                                       takefocus = False,
                                       fg = "White",
-                                      bg = "#6e5c62",
+                                      bg = BG_APP,
                                       width = 8,
                                       height = 1,
                                       command = lambda: check_guess(self, rows, random_number, leaderboard, connection, window))
         self.guess_button.pack(anchor = "n",
                                pady = 10)
-        # window.bind("<Return>", lambda event: check_guess(self, rows, random_number, leaderboard, connection, window))
+        self.return_function = "guess"
+        window.bind("<Return>", lambda event: self._return_bind(rows, random_number, leaderboard, connection, window))
     
+    def _return_bind(self, rows: list, random_number: np.ndarray, leaderboard: tk.Frame, connection: sqlite3.Connection, window: tk.Tk):
+        if self.return_function == "guess":
+            check_guess(self, rows, random_number, leaderboard, connection, window)
+        elif self.return_function == "clear":
+            self._clear_ui(rows, leaderboard, connection, window)
+
     def _clear_ui(self, rows: list, leaderboard: tk.Frame, connection: sqlite3.Connection, window: tk.Tk, changing_player = False):
         """Clears the UI from the game frame
         
@@ -109,17 +116,17 @@ class GameFrame(tk.Frame):
         for boxes in rows:
             for box in boxes:
                 box.configure(state = "normal",
-                              bg = "#615458",
-                              highlightbackground = "#615458")
+                              bg = BG_DISABLED,
+                              highlightbackground = HIGHLIGHTBG_DISABLED)
                 box.delete(0, tk.END)
                 box.configure(disabledbackground = box["bg"],
                               state = "disable")
 
         for box in rows[0]:
             box.configure(state = "normal",
-                          bg = "#6e5c62",
-                          highlightbackground = "#4c4347",
-                          highlightcolor = "#4c4347")
+                          bg = BG_APP,
+                          highlightbackground = HIGHLIGHTBG_GUESS_ROW,
+                          highlightcolor = HIGHLIGHTCOLOR_GUESS_ROW)
 
         self.guess_row = 0
         if not changing_player and self.win_streak >= 1:
@@ -128,13 +135,11 @@ class GameFrame(tk.Frame):
             self.info.configure(text = "")
         self.player_score.configure(text = f"Score: {self.score}")
 
-        # window.unbind("<Return>")
-        # window.bind("<Return>", lambda event: check_guess(self, rows, random_number, leaderboard, connection, window))
-
+        self.return_function = "guess"
         random_number = generate_number()
         self.guess_button.configure(text = "Guess",
                                     command = lambda: check_guess(self, rows, random_number, leaderboard, connection, window))
-    
+
     def _focus_next_box(self, event: tk.Event):
         """Focus on the next entry
         

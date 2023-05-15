@@ -1,5 +1,6 @@
 import tkinter as tk
 import sqlite3
+from src.settings import *
 from src.DatabaseHandler import *
 from src.LeaderboardFrame.utils.check_rank import *
 
@@ -12,7 +13,7 @@ def build_leaderboard(test, connection: sqlite3.Connection, current_player: list
     current_player(list): List with the data of the current player
     """
     test.leaderboard_holder = tk.Frame(test,
-                                       bg = "#6e5c62")
+                                       bg = BG_APP)
     test.leaderboard_holder.pack(anchor = "center",
                                  fill = "both",
                                  pady = 10)
@@ -24,8 +25,8 @@ def build_leaderboard(test, connection: sqlite3.Connection, current_player: list
     rank_column = tk.Label(test.leaderboard_holder,
                            text = "Rank",
                            font = ("Arial", 12, "bold"),
-                           fg = "White",
-                           bg = "#4c4347",
+                           fg = FG,
+                           bg = BG_LEADERBOARD_ODD,
                            border = 1,
                            relief = "solid")
     rank_column.grid(row = 0,
@@ -35,8 +36,8 @@ def build_leaderboard(test, connection: sqlite3.Connection, current_player: list
     player_column = tk.Label(test.leaderboard_holder,
                              text = "Player",
                              font = ("Arial", 12, "bold"),
-                             fg = "White",
-                             bg = "#6e5c62",
+                             fg = FG,
+                             bg = BG_LEADERBOARD_EVEN,
                              border = 1,
                              relief = "solid")
     player_column.grid(row = 0,
@@ -46,8 +47,8 @@ def build_leaderboard(test, connection: sqlite3.Connection, current_player: list
     consecutive_wins_column = tk.Label(test.leaderboard_holder,
                                        text = "Win Streak",
                                        font = ("Arial", 12, "bold"),
-                                       fg = "White",
-                                       bg = "#4c4347",
+                                       fg = FG,
+                                       bg = BG_LEADERBOARD_ODD,
                                        border = 1,
                                        relief = "solid")
     consecutive_wins_column.grid(row = 0,
@@ -57,13 +58,13 @@ def build_leaderboard(test, connection: sqlite3.Connection, current_player: list
     score_column = tk.Label(test.leaderboard_holder,
                             text = "Score",
                             font = ("Arial", 12, "bold"),
-                            fg = "White",
-                            bg = "#6e5c62",
+                            fg = FG,
+                            bg = BG_LEADERBOARD_EVEN,
                             border = 1,
                             relief = "solid")
     score_column.grid(row = 0,
-                        column = 3,
-                        sticky = "nsew")
+                      column = 3,
+                      sticky = "nsew")
     
     top_players = get_top_ten(test, connection)
     populate_leaderboard(test, test.leaderboard_holder, top_players, current_player)
@@ -99,7 +100,7 @@ def populate_leaderboard(self, master: tk.Frame, top_players: list, current_play
                                text = i,
                                font = ("Arial", 12, "bold"),
                                fg = medal,
-                               bg = "#4c4347",
+                               bg = BG_LEADERBOARD_ODD,
                                border = 1,
                                relief = "solid")
         rank_column.grid(row = i,
@@ -109,8 +110,8 @@ def populate_leaderboard(self, master: tk.Frame, top_players: list, current_play
         player_column = tk.Label(master,
                                  text = "You" if is_current else player,
                                  font = ("Arial", 12, "bold"),
-                                 fg = "Blue" if is_current else "White",
-                                 bg = "#6e5c62",
+                                 fg = "Blue" if is_current else FG,
+                                 bg = BG_LEADERBOARD_EVEN,
                                  border = 1,
                                  relief = "solid")
         player_column.grid(row = i,
@@ -120,8 +121,8 @@ def populate_leaderboard(self, master: tk.Frame, top_players: list, current_play
         consecutive_wins_column = tk.Label(master,
                                            text = consecutive_wins,
                                            font = ("Arial", 12, "bold"),
-                                           fg = "White",
-                                           bg = "#4c4347",
+                                           fg = FG,
+                                           bg = BG_LEADERBOARD_ODD,
                                            border = 1,
                                            relief = "solid")
         consecutive_wins_column.grid(row = i,
@@ -131,12 +132,12 @@ def populate_leaderboard(self, master: tk.Frame, top_players: list, current_play
         score_column = tk.Label(master,
                                 text = score,
                                 font = ("Arial", 12, "bold"),
-                                fg = "White",
-                                bg = "#6e5c62",
+                                fg = FG,
+                                bg = BG_LEADERBOARD_EVEN,
                                 border = 1,
                                 relief = "solid")
         score_column.grid(row = i,
-                            column = 3,
-                            sticky = "nsew")
+                          column = 3,
+                          sticky = "nsew")
     self.last_rank_score = score
     

@@ -1,4 +1,5 @@
 import tkinter as tk
+from src.settings import *
 
 
 def create_boxes(self, app_window: tk.Tk) -> list:
@@ -11,7 +12,7 @@ def create_boxes(self, app_window: tk.Tk) -> list:
     rows(list): List containing the boxes created
     """
     boxes_holder = tk.Label(self,
-                            bg = "#6e5c62")
+                            bg = BG_APP)
     boxes_holder.pack(anchor = "n")
 
     validation_command = app_window.register(self._validate_entry)
@@ -22,12 +23,12 @@ def create_boxes(self, app_window: tk.Tk) -> list:
             box = tk.Entry(boxes_holder,
                            font = ("Arial", 14),
                            justify = "center",
-                           fg = "White",
-                           bg = "#615458",
+                           fg = FG,
+                           bg = BG_DISABLED,
                            width = 3,
                            border = 0,
                            highlightthickness = 4,
-                           highlightbackground = "#615458",
+                           highlightbackground = HIGHLIGHTBG_DISABLED,
                            state = "disabled",
                            validate = "key",
                            validatecommand=(validation_command, '%P'))
@@ -47,9 +48,9 @@ def create_boxes(self, app_window: tk.Tk) -> list:
 
     for box in rows[0]:
         box.configure(state = "normal",
-                      bg = "#6e5c62",
-                      highlightbackground = "#4c4347",
-                      highlightcolor = "#4c4347")
+                      bg = BG_GUESS_ROW,
+                      highlightbackground = HIGHLIGHTBG_GUESS_ROW,
+                      highlightcolor = HIGHLIGHTCOLOR_GUESS_ROW)
 
     return rows
 
@@ -69,6 +70,6 @@ def update_boxes(self, rows: list, next_row: None = True):
     if next_row == True:
         for box in rows[self.guess_row]:
             box.configure(state = "normal",
-                          bg = "#6e5c62",
-                          highlightbackground = "#4c4347",
-                          highlightcolor = "#4c4347")
+                          bg = BG_GUESS_ROW,
+                          highlightbackground = HIGHLIGHTBG_GUESS_ROW,
+                          highlightcolor = HIGHLIGHTCOLOR_GUESS_ROW)

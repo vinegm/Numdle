@@ -1,5 +1,7 @@
 import tkinter as tk
+from src.settings import *
 from src.LeaderboardFrame.utils.check_rank import *
+
 
 def display_player(self, current_player: list = None):
         """Displays the current player status below the leaderboard
@@ -20,8 +22,8 @@ def display_player(self, current_player: list = None):
             not_saved = tk.Label(self.player_holder,
                                  text = "Guests Scores are not Tracked!",
                                  font = ("Arial", 12, "bold"),
-                                 fg = "White",
-                                 bg = "#4c4347",
+                                 fg = FG,
+                                 bg = BG_LEADERBOARD_ODD,
                                  relief = "solid")
             not_saved.grid(row = 0,
                            column = 0, columnspan = 4,
@@ -35,7 +37,7 @@ def display_player(self, current_player: list = None):
                         text = "#" if rank == None else rank,
                         font = ("Arial", 12, "bold"),
                         fg = medal,
-                        bg = "#4c4347",
+                        bg = BG_LEADERBOARD_ODD,
                         border = 1,
                         relief = "solid")
         rank.grid(row = 0,
@@ -45,8 +47,8 @@ def display_player(self, current_player: list = None):
         player = tk.Label(self.player_holder,
                           text = player_nick,
                           font = ("Arial", 12, "bold"),
-                          fg = "White",
-                          bg = "#6e5c62",
+                          fg = FG,
+                          bg = BG_LEADERBOARD_EVEN,
                           border = 1,
                           relief = "solid")
         player.grid(row = 0,
@@ -56,8 +58,8 @@ def display_player(self, current_player: list = None):
         consecutive_wins = tk.Label(self.player_holder,
                                     text = player_consecutive_wins,
                                     font = ("Arial", 12, "bold"),
-                                    fg = "White",
-                                    bg = "#4c4347",
+                                    fg = FG,
+                                    bg = BG_LEADERBOARD_ODD,
                                     border = 1,
                                     relief = "solid")
         consecutive_wins.grid(row = 0,
@@ -67,8 +69,8 @@ def display_player(self, current_player: list = None):
         score = tk.Label(self.player_holder,
                          text = player_score,
                          font = ("Arial", 12, "bold"),
-                         fg = "White",
-                         bg = "#6e5c62",
+                         fg = FG,
+                         bg = BG_LEADERBOARD_EVEN,
                          border = 1,
                          relief = "solid")
         score.grid(row = 0,

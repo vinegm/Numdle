@@ -1,3 +1,6 @@
+from src.settings import *
+
+
 def check_rank(self, player_id: int):
     """Checks if the current player is in the top 10 players
     
@@ -28,11 +31,11 @@ def check_medal(rank: int) -> str:
     medal(str): Hex code of the color of his medal if he has one
     """
     if rank == 1:
-        medal = "Yellow"
+        medal = MEDAL_FIRST
     elif rank == 2:
-        medal = "#C0C0C0"
+        medal = MEDAL_SECOND
     elif rank == 3:
-        medal = "#cd7f32"
+        medal = MEDAL_THIRD
     else:
-        medal = "White"
+        medal = FG
     return medal

@@ -8,10 +8,10 @@ from src.LeaderboardFrame.utils import *
 class LeaderboardFrame(tk.Frame):
     """Frame for displaying the top 10 best players and the current player best score"""
     def __init__(self, connection: sqlite3.Connection, master: tk.Frame, window: tk.Tk):
-        tk.Frame.__init__(self, master, bg = "#6e5c62")
+        tk.Frame.__init__(self, master, bg = BG_APP)
 
         header_holder= tk.Frame(self,
-                                bg = "#6e5c62")
+                                bg = BG_APP)
         header_holder.pack(anchor = "center",
                            fill = "x",
                            pady = 5)
@@ -22,7 +22,7 @@ class LeaderboardFrame(tk.Frame):
 
         back = tk.Label(header_holder,
                         image = back_image,
-                        bg = "#6e5c62")
+                        bg = BG_APP)
         back.image = back_image
         back.pack(side = "left")
         back.bind("<Button-1>", lambda event: window.change_frame("GameFrame"))
@@ -30,8 +30,8 @@ class LeaderboardFrame(tk.Frame):
         header = tk.Label(header_holder,
                           text = "LeaderboardFrame",
                           font = ("Arial", 16, "bold"),
-                          fg = "White",
-                          bg = "#6e5c62")
+                          fg = FG,
+                          bg = BG_APP)
         header.pack(side = "left",
                     padx = 70)
 

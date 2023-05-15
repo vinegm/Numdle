@@ -5,6 +5,7 @@ import numpy as np
 from src.DatabaseHandler import *
 from src.GameFrame.utils.boxes_handler import *
 
+
 def check_guess(self, rows: list, random_number: np.ndarray, leaderboard: tk.Frame, connection: sqlite3.Connection, window: tk.Tk):
     """Checks the player guess
     
@@ -25,18 +26,17 @@ def check_guess(self, rows: list, random_number: np.ndarray, leaderboard: tk.Fra
     for i, box in enumerate(rows[self.guess_row]):
         if int(box.get()) == target[i]:
             target[i] = _found
-            box.configure(bg = "#3aa394",
-                            highlightbackground = "#3aa394")
+            box.configure(bg = BG_CORRECT,
+                          highlightbackground = HIGHLIGHTBG_CORRECT)
         else:
-            box.configure(bg = "#312a2c",
-                            highlightbackground = "#312a2c")
+            box.configure(bg = BG_MISS,
+                          highlightbackground = HIGHLIGHTBG_MISS)
     
     # If every number is correct
     if np.all(target == _found):
         self.guess_button.config(text = "Play Again",
                                     command = lambda: self._clear_ui(rows, leaderboard, connection, window))
-        # window.unbind("<Return>")
-        # window.bind("<Backspace>", self._clear_ui(rows, leaderboard, connection, window))
+        self.return_function = "clear"
 
         self.info.configure(text = "Nice, you got it!")
         self.win_streak += 1
@@ -59,19 +59,18 @@ def check_guess(self, rows: list, random_number: np.ndarray, leaderboard: tk.Fra
 
     for box in rows[self.guess_row]:
         for i, number in enumerate(target):
-            if int(box.get()) == number and box["bg"] != "#3aa394":
+            if int(box.get()) == number and box["bg"] != BG_CORRECT:
                 target[i] = _found
-                box.configure(bg = "#d3ad69",
-                                highlightbackground = "#d3ad69")
+                box.configure(bg = BG_CLOSE,
+                              highlightbackground = HIGHLIGHTBG_CLOSE)
                 break
     
     # If the player used it's last guess
     if self.guess_row > 4:
         self.guess_button.config(text = "Try Again",
                                     command = lambda: self._clear_ui(rows, leaderboard, connection, window))
+        self.return_function = "clear"
         self.info.configure(text = f"The number was {''.join(map(str, random_number))}")
-        # window.unbind("<Return>")
-        # window.bind("<Backspace>", self._clear_ui(rows, leaderboard, connection, window))
 
         update_status(self, leaderboard, connection)
         update_boxes(self, rows, False)

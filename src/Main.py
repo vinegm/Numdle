@@ -16,8 +16,7 @@ class Numdle(tk.Tk):
         self.eval("tk::PlaceWindow . center")
         self.iconbitmap("assets/Numdle.ico")
 
-        leaderboard = sqlite3.connect("assets/Leaderboard.db")
-        create_leaderboard(leaderboard)
+        leaderboard = connect_db()
 
         frames_holder = tk.Frame(self)
         frames_holder.pack(anchor = "center",

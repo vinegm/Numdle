@@ -4,6 +4,12 @@ import tkinter.simpledialog as simpledialog
 import sqlite3
 
 
+def connect_db() -> sqlite3.Connection:
+    connection = sqlite3.Connection("src/Leaderboard.db")
+    create_leaderboard(connection)
+    return connection
+
+
 def create_leaderboard(connection: sqlite3.Connection):
     """Creates the table of the leaderboard if it doesn't exist
     

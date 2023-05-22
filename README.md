@@ -2,6 +2,10 @@
 
 Numdle is a desktop number guessing game made with python, it was inspired by <a href="https://term.ooo" target="_blank" title="Check Termo Out">termo</a> and <a href="https://www.nytimes.com/games/wordle/index.html" target="_blank" title="Check Wordle Out">wordle</a>.
 
+<h2>Installation</h2>
+
+If you wish to play Numdle trough the .exe, you may only keep the "assets" folder and play as you like, it might only run run on windows (I'm not sure if it will run on mac and linux as I don't have a way to test), if you wish to play with the .py just download the necessary libraries and have fun!
+
 <h2>Used Libraries</h2>
 
 <table>

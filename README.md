@@ -4,7 +4,7 @@ Numdle is a desktop number guessing game made with python, it was inspired by <a
 
 <h2>Installation</h2>
 
-If you wish to play Numdle trough the .exe, you may only keep the "assets" folder and play as you like, it might only run run on windows (I'm not sure if it will run on mac and linux as I don't have a way to test), if you wish to play with the .py just download the necessary libraries and have fun!
+If you wish to play Numdle trough the .exe, you may only keep the "assets" folder and play as you like, it might only run on windows (I'm not sure if it will run on mac and linux as I don't have a way to test), if you wish to play with the .py just download the necessary libraries and have fun!
 
 <h2>Used Libraries</h2>
 
@@ -39,7 +39,7 @@ This is the game window, in the window title it will display the game name and t
 
 <h2>The Player</h2>
 
-To change the current player you can simple click on the profile icon and type a new player nickname, it doesn't use a login system for symplicity
+To change the current player you can simply click on the profile icon and type a new player nickname, it doesn't use a login system for symplicity
 
 ![image](https://github.com/vinegm/Numdle/assets/117782568/e1310417-1b21-4adf-b8c0-e65442c26892)
 

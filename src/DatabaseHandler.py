@@ -5,7 +5,7 @@ import sqlite3
 
 
 def connect_db() -> sqlite3.Connection:
-    connection = sqlite3.Connection("src/Leaderboard.db")
+    connection = sqlite3.Connection("assets/Leaderboard.db")
     create_leaderboard(connection)
     return connection
 

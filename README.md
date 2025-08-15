@@ -90,7 +90,7 @@ To access the leaderboad click the leaderboard icon in the game frame
 
 The leaderboard displays the top 10 local players with the best score, and the current player personal best below
 
-![image](https://github.com/vinegm/Numdle/assets/117782568/14a3d5a7-d4bf-47d8-9771-b1592cb3d27a) ***REMOVED***
+![image](https://github.com/vinegm/Numdle/assets/117782568/14a3d5a7-d4bf-47d8-9771-b1592cb3d27a)
 
 <h2>Thank You!</h2>
 
